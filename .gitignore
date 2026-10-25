@@ -1,0 +1,18 @@
+# Файлы IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Скомпилированные файлы Java
+*.class
+
+# Папка сборки Maven
+target/
+
+# Файлы логов
+*.log
+
+# Системные файлы Windows
+Thumbs.db
+Desktop.ini
