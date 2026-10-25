@@ -84,10 +84,6 @@ public class Compartment {
 
     @Override
     public String toString() {
-        return "Compartment{" +
-                "name='" + name + '\'' +
-                ", currentWeight=" + currentWeight +
-                ", maxWeight=" + maxWeight +
-                '}';
+        return "Compartment{" + "name='" + name + '\'' + ", currentWeight=" + currentWeight + ", maxWeight=" + maxWeight + '}';
     }
 }
