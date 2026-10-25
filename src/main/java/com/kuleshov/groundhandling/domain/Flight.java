@@ -1,23 +1,49 @@
 package com.kuleshov.groundhandling.domain;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "flights")
 public class Flight {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "flight_number", nullable = false, unique = true)
     private String flightNumber;
-    private String aircraftType; //МБ тоже статусы
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "aircraft_type", nullable = false)
+    private AircraftType aircraftType;
+
+    @Column(name = "scheduled_time", nullable = false)
     private LocalDateTime scheduledTime;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private FlightStatus status;
 
+    @Column(name = "total_cargo_weight")
     private Double totalCargoWeight;
 
-    public Flight() { //Для Hibernate обязательны!
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "aircraft_id")
+    private Aircraft aircraft;
+
+    @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Cargo> cargoList = new ArrayList<>();
+
+    public Flight() {
         this.status = FlightStatus.SCHEDULED;
         this.totalCargoWeight = 0.0;
     }
 
-    public Flight(String flightNumber, String aircraftType, LocalDateTime scheduledTime) {
+    public Flight(String flightNumber, AircraftType aircraftType, LocalDateTime scheduledTime) {
         this.flightNumber = flightNumber;
         this.aircraftType = aircraftType;
         this.scheduledTime = scheduledTime;
@@ -41,11 +67,11 @@ public class Flight {
         this.flightNumber = flightNumber;
     }
 
-    public String getAircraftType() {
+    public AircraftType getAircraftType() {
         return aircraftType;
     }
 
-    public void setAircraftType(String aircraftType) {
+    public void setAircraftType(AircraftType aircraftType) {
         this.aircraftType = aircraftType;
     }
 
@@ -73,13 +99,35 @@ public class Flight {
         this.totalCargoWeight = totalCargoWeight;
     }
 
+    public Aircraft getAircraft() {
+        return aircraft;
+    }
+
+    public void setAircraft(Aircraft aircraft) {
+        this.aircraft = aircraft;
+    }
+
+    public List<Cargo> getCargoList() {
+        return cargoList;
+    }
+
+    public void setCargoList(List<Cargo> cargoList) {
+        this.cargoList = cargoList;
+    }
+
+    public void addCargo(Cargo cargo) {
+        cargoList.add(cargo);
+        cargo.setFlight(this);
+    }
+
     @Override
     public String toString() {
         return "Flight{" +
                 "flightNumber='" + flightNumber + '\'' +
-                ", aircraftType='" + aircraftType + '\'' +
+                ", aircraftType=" + aircraftType.getDisplayName() +
                 ", scheduledTime=" + scheduledTime +
-                ", status='" + status + '\'' +
+                ", status=" + status +
+                ", totalCargoWeight=" + totalCargoWeight +
                 '}';
     }
 }
