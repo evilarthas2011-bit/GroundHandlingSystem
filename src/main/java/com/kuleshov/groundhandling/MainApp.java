@@ -1,25 +1,49 @@
 package com.kuleshov.groundhandling;
 
+import com.kuleshov.groundhandling.domain.Flight;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.hibernate.Session;
+
+import java.time.LocalDateTime;
 
 public class MainApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // Создаем простой интерфейс для проверки запуска
-        Label label = new Label("Автоматизированное раб/место диспетчера в аэропорту ");
-        label.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        Label statusLabel = new Label("Проверка подключения к БД...");
+        Label resultLabel = new Label();
 
-        StackPane root = new StackPane();
-        root.getChildren().add(label);
+        try {
+            Flight testFlight = new Flight(
+                    "SU-1234",
+                    "Boeing 737",
+                    LocalDateTime.now()
+            );
 
-        Scene scene = new Scene(root, 800, 600);
+            Session session = HibernateUtil.getSessionFactory().openSession();
+            session.beginTransaction();
+            session.persist(testFlight);
+            session.getTransaction().commit();
+            session.close();
 
-        primaryStage.setTitle("Ground Handling System v1.0");
+            resultLabel.setText("✓ Рейс успешно сохранен в БД! ID: " + testFlight.getId());
+            statusLabel.setText("Подключение к PostgreSQL работает!");
+
+        } catch (Exception e) {
+            resultLabel.setText("✗ Ошибка: " + e.getMessage());
+            statusLabel.setText("Ошибка подключения к БД");
+            e.printStackTrace();
+        }
+
+        VBox root = new VBox(10, statusLabel, resultLabel);
+        root.setStyle("-fx-padding: 20;");
+
+        Scene scene = new Scene(root, 600, 400);
+        primaryStage.setTitle("Ground Handling System - Тест БД");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
