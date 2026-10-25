@@ -1,15 +1,29 @@
 package com.kuleshov.groundhandling.domain;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "flights")
 public class Flight {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "flight_number", nullable = false, unique = true)
     private String flightNumber;
-    private String aircraftType; //МБ тоже статусы
+
+    @Column(name = "aircraft_type", nullable = false)
+    private String aircraftType;
+
+    @Column(name = "scheduled_time", nullable = false)
     private LocalDateTime scheduledTime;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
     private FlightStatus status;
 
+    @Column(name = "total_cargo_weight")
     private Double totalCargoWeight;
 
     public Flight() { //Для Hibernate обязательны!
