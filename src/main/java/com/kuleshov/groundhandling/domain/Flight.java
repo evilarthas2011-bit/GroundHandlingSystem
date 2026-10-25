@@ -1,11 +1,15 @@
 package com.kuleshov.groundhandling.domain;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "flights")
 public class Flight {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,7 +30,16 @@ public class Flight {
     @Column(name = "total_cargo_weight")
     private Double totalCargoWeight;
 
-    public Flight() { //Для Hibernate обязательны!
+    // Связь с воздушным судном
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "aircraft_id")
+    private Aircraft aircraft;
+
+    // Связь с грузами
+    @OneToMany(mappedBy = "flight", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Cargo> cargoList = new ArrayList<>();
+
+    public Flight() {
         this.status = FlightStatus.SCHEDULED;
         this.totalCargoWeight = 0.0;
     }
@@ -39,6 +52,7 @@ public class Flight {
         this.totalCargoWeight = 0.0;
     }
 
+    // Getters и Setters
     public Long getId() {
         return id;
     }
@@ -87,13 +101,35 @@ public class Flight {
         this.totalCargoWeight = totalCargoWeight;
     }
 
+    public Aircraft getAircraft() {
+        return aircraft;
+    }
+
+    public void setAircraft(Aircraft aircraft) {
+        this.aircraft = aircraft;
+    }
+
+    public List<Cargo> getCargoList() {
+        return cargoList;
+    }
+
+    public void setCargoList(List<Cargo> cargoList) {
+        this.cargoList = cargoList;
+    }
+
+    public void addCargo(Cargo cargo) {
+        cargoList.add(cargo);
+        cargo.setFlight(this);
+    }
+
     @Override
     public String toString() {
         return "Flight{" +
                 "flightNumber='" + flightNumber + '\'' +
                 ", aircraftType='" + aircraftType + '\'' +
                 ", scheduledTime=" + scheduledTime +
-                ", status='" + status + '\'' +
+                ", status=" + status +
+                ", totalCargoWeight=" + totalCargoWeight +
                 '}';
     }
 }
