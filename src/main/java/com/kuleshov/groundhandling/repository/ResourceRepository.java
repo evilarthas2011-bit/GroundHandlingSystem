@@ -2,6 +2,7 @@ package com.kuleshov.groundhandling.repository;
 
 import com.kuleshov.groundhandling.domain.Brigade;
 import com.kuleshov.groundhandling.domain.Equipment;
+import com.kuleshov.groundhandling.domain.Flight;
 import com.kuleshov.groundhandling.domain.Resource;
 import com.kuleshov.groundhandling.HibernateUtil;
 import org.hibernate.Session;
@@ -49,7 +50,13 @@ public class ResourceRepository {
             return session.get(Resource.class, id);
         }
     }
-
+    public List<Resource> findByAssignedFlight(Flight flight) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                            "FROM Resource r WHERE r.assignedFlight = :flight", Resource.class)
+                    .setParameter("flight", flight)
+                    .getResultList();
+        }}
     public Resource update(Resource resource) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
