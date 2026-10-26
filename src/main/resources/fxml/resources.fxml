@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.kuleshov.groundhandling.controller.ResourcesController"
+      spacing="15"
+      stylesheets="/css/dashboard.css">
+
+    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+
+    <HBox alignment="CENTER_LEFT" spacing="10">
+        <Label text="Управление ресурсами перрона" styleClass="page-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="➕ Добавить ресурс" fx:id="addResourceButton" onAction="#handleAddResource"
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 13px; -fx-background-radius: 5; -fx-cursor: hand;"/>
+        <Button text=" Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
+    </HBox>
+
+    <HBox spacing="15" styleClass="stats-container">
+        <VBox styleClass="stat-card">
+            <Label text="Всего ресурсов" styleClass="stat-label"/>
+            <Label fx:id="totalResourcesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card">
+            <Label text="Техника" styleClass="stat-label"/>
+            <Label fx:id="equipmentCountLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card">
+            <Label text="Бригады" styleClass="stat-label"/>
+            <Label fx:id="brigadeCountLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card">
+            <Label text="Свободно" styleClass="stat-label"/>
+            <Label fx:id="freeResourcesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+        <VBox styleClass="stat-card">
+            <Label text="Занято" styleClass="stat-label"/>
+            <Label fx:id="busyResourcesLabel" text="0" styleClass="stat-value"/>
+        </VBox>
+    </HBox>
+
+    <HBox spacing="10">
+        <ComboBox fx:id="filterTypeComboBox" promptText="Все типы" prefWidth="150.0"/>
+        <ComboBox fx:id="filterStatusComboBox" promptText="Все статусы" prefWidth="150.0"/>
+        <TextField fx:id="searchField" promptText=" Поиск..." HBox.hgrow="ALWAYS"/>
+    </HBox>
+
+    <TabPane VBox.vgrow="ALWAYS">
+        <tabs>
+            <Tab text="🚜 Техника" closable="false">
+                <TableView fx:id="equipmentTable" styleClass="flights-table">
+                    <columns>
+                        <TableColumn fx:id="equipmentNameColumn" text="Модель" prefWidth="200"/>
+                        <TableColumn fx:id="equipmentCapacityColumn" text="Грузоподъёмность" prefWidth="120"/>
+                        <TableColumn fx:id="equipmentStatusColumn" text="Статус" prefWidth="130"/>
+                        <TableColumn fx:id="equipmentFlightColumn" text="На рейсе" prefWidth="150"/>
+                        <TableColumn fx:id="equipmentActionColumn" text="Действия" prefWidth="200"/>
+                    </columns>
+                </TableView>
+            </Tab>
+
+            <Tab text="👷 Бригады" closable="false">
+                <TableView fx:id="brigadeTable" styleClass="flights-table">
+                    <columns>
+                        <TableColumn fx:id="brigadeNameColumn" text="Специализация" prefWidth="200"/>
+                        <TableColumn fx:id="brigadeSizeColumn" text="Численность" prefWidth="100"/>
+                        <TableColumn fx:id="brigadeStatusColumn" text="Статус" prefWidth="130"/>
+                        <TableColumn fx:id="brigadeFlightColumn" text="На рейсе" prefWidth="150"/>
+                        <TableColumn fx:id="brigadeActionColumn" text="Действия" prefWidth="200"/>
+                    </columns>
+                </TableView>
+            </Tab>
+        </tabs>
+    </TabPane>
+</VBox>

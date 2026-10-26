@@ -166,3 +166,11 @@
 .status-delayed {
     -fx-background-color: #e74c3c; /* Красный — задержка */
 }
+.action-button.danger {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: white;
+}
+
+.action-button.danger:hover {
+    -fx-background-color: #c0392b;
+}

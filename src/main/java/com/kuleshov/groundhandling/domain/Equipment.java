@@ -37,6 +37,7 @@ public class Equipment extends Resource {
         this.loadCapacity = loadCapacity;
     }
 
+
     @Override
     public String toString() {
         return "Equipment{" +

@@ -3,106 +3,82 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.paint.Color?>
 
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.kuleshov.groundhandling.controller.DashboardController"
             stylesheets="/css/dashboard.css"
             prefWidth="1200.0" prefHeight="700.0">
 
-    <!-- Левая боковая панель (Sidebar) -->
     <left>
         <VBox styleClass="sidebar" prefWidth="200.0">
-            <padding>
-                <Insets top="20" right="10" bottom="10" left="10"/>
-            </padding>
-
-            <Label text="️ Ground Handling" styleClass="sidebar-title"/>
-
+            <padding><Insets top="20" right="10" bottom="10" left="10"/></padding>
+            <Label text="✈ Ground Handling" styleClass="sidebar-title"/>
             <Separator/>
-
-            <Button text="📋 Рейсы" styleClass="nav-button active"/>
-            <Button text="🚚 Ресурсы" styleClass="nav-button"/>
+            <Button text="📋 Рейсы" fx:id="btnFlights" styleClass="nav-button active"/>
+            <Button text="🚚 Ресурсы" fx:id="btnResources" styleClass="nav-button"/>
             <Button text="📊 Отчёты" styleClass="nav-button"/>
             <Button text="⚙️ Настройки" styleClass="nav-button"/>
-
             <Region VBox.vgrow="ALWAYS"/>
-
             <Label text="v1.0.0" styleClass="version-label"/>
         </VBox>
     </left>
 
-    <!-- Центральная часть (Dashboard) -->
     <center>
-        <VBox spacing="15">
-            <padding>
-                <Insets top="20" right="20" bottom="20" left="20"/>
-            </padding>
+        <StackPane fx:id="mainContent">
+            <VBox fx:id="flightsView" spacing="15">
+                <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
-            <!-- Заголовок -->
-            <HBox alignment="CENTER_LEFT" spacing="10">
-                <Label text="Панель управления рейсами" styleClass="page-title"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="➕ Новый рейс" fx:id="newFlightButton" onAction="#handleNewFlight"
-                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 13px; -fx-background-radius: 5; -fx-cursor: hand;"/>
-                <Button text="🔄 Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
-            </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label text="Панель управления рейсами" styleClass="page-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="➕ Новый рейс" fx:id="newFlightButton" onAction="#handleNewFlight"
+                            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 13px; -fx-background-radius: 5; -fx-cursor: hand;"/>
+                    <Button text="🔄 Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
+                </HBox>
 
-            <!-- Виджеты статистики -->
-            <HBox spacing="15" styleClass="stats-container">
-                <VBox styleClass="stat-card">
-                    <Label text="Всего рейсов" styleClass="stat-label"/>
-                    <Label fx:id="totalFlightsLabel" text="0" styleClass="stat-value"/>
-                </VBox>
+                <HBox spacing="15" styleClass="stats-container">
+                    <VBox styleClass="stat-card">
+                        <Label text="Всего рейсов" styleClass="stat-label"/>
+                        <Label fx:id="totalFlightsLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card">
+                        <Label text="Активных" styleClass="stat-label"/>
+                        <Label fx:id="activeFlightsLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+                    <VBox styleClass="stat-card">
+                        <Label text="Завершено" styleClass="stat-label"/>
+                        <Label fx:id="completedFlightsLabel" text="0" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
 
-                <VBox styleClass="stat-card">
-                    <Label text="Активных" styleClass="stat-label"/>
-                    <Label fx:id="activeFlightsLabel" text="0" styleClass="stat-value"/>
-                </VBox>
-
-                <VBox styleClass="stat-card">
-                    <Label text="Завершено" styleClass="stat-label"/>
-                    <Label fx:id="completedFlightsLabel" text="0" styleClass="stat-value"/>
-                </VBox>
-            </HBox>
-
-            <!-- Таблица рейсов -->
-            <TableView fx:id="flightsTable" VBox.vgrow="ALWAYS" styleClass="flights-table">
-                <columns>
-                    <TableColumn fx:id="flightNumberColumn" text="Рейс" prefWidth="120"/>
-                    <TableColumn fx:id="aircraftTypeColumn" text="Тип ВС" prefWidth="150"/>
-                    <TableColumn fx:id="statusColumn" text="Статус" prefWidth="130"/>
-                    <TableColumn fx:id="weightColumn" text="Загрузка" prefWidth="150"/>
-                    <TableColumn fx:id="equipmentColumn" text="Техника" prefWidth="150"/>
-                    <TableColumn fx:id="brigadeColumn" text="Бригада" prefWidth="150"/>
-                    <TableColumn fx:id="actionsColumn" text="Действия" prefWidth="200"/>
-                </columns>
-            </TableView>
-        </VBox>
+                <TableView fx:id="flightsTable" VBox.vgrow="ALWAYS" styleClass="flights-table">
+                    <columns>
+                        <TableColumn fx:id="flightNumberColumn" text="Рейс" prefWidth="120"/>
+                        <TableColumn fx:id="aircraftTypeColumn" text="Тип ВС" prefWidth="150"/>
+                        <TableColumn fx:id="statusColumn" text="Статус" prefWidth="130"/>
+                        <TableColumn fx:id="weightColumn" text="Загрузка" prefWidth="150"/>
+                        <TableColumn fx:id="equipmentColumn" text="Техника" prefWidth="150"/>
+                        <TableColumn fx:id="brigadeColumn" text="Бригада" prefWidth="150"/>
+                        <TableColumn fx:id="actionsColumn" text="Действия" prefWidth="200"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </StackPane>
     </center>
 
-    <!-- Правая боковая панель (детали рейса) -->
     <right>
         <VBox fx:id="detailsPanel" styleClass="details-panel" prefWidth="350.0" visible="false" managed="false">
-            <padding>
-                <Insets top="20" right="15" bottom="20" left="15"/>
-            </padding>
-
+            <padding><Insets top="20" right="15" bottom="20" left="15"/></padding>
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="Детали рейса" styleClass="details-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
                 <Button text="✕" fx:id="closeDetailsButton" onAction="#handleCloseDetails" styleClass="close-button"/>
             </HBox>
-
             <Separator/>
-
             <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
                 <VBox spacing="15">
-                    <padding>
-                        <Insets top="10"/>
-                    </padding>
+                    <padding><Insets top="10"/></padding>
 
-                    <!-- Информация о рейсе -->
                     <VBox spacing="5">
                         <Label text="Номер рейса:" styleClass="detail-label"/>
                         <Label fx:id="detailFlightNumber" styleClass="detail-value"/>
@@ -115,58 +91,45 @@
 
                     <VBox spacing="5">
                         <Label text="Статус:" styleClass="detail-label"/>
-                        <Label fx:id="detailStatus" styleClass="detail-value"/>
+                        <ComboBox fx:id="statusComboBox" style="-fx-font-size: 13px;"/>
                     </VBox>
 
                     <Separator/>
 
-                    <!-- Груз и вес -->
-                    <Label text="📦 Груз" styleClass="section-title"/>
+                    <Label text=" Груз" styleClass="section-title"/>
 
                     <VBox spacing="5">
                         <Label text="Общий вес:" styleClass="detail-label"/>
                         <Label fx:id="detailTotalWeight" styleClass="detail-value"/>
                     </VBox>
 
-                    <!-- Отсеки -->
                     <VBox fx:id="compartmentsContainer" spacing="10"/>
 
                     <Separator/>
 
-                    <!-- Ресурсы -->
                     <Label text="🚚 Ресурсы" styleClass="section-title"/>
 
                     <VBox spacing="10">
                         <Label text="Техника:" styleClass="detail-label"/>
                         <ComboBox fx:id="equipmentComboBox" promptText="Выберите технику"/>
-
                         <Label text="Бригада:" styleClass="detail-label"/>
                         <ComboBox fx:id="brigadeComboBox" promptText="Выберите бригаду"/>
                     </VBox>
 
                     <Separator/>
 
-                    <!-- Кнопки действий -->
-                    <Button text="✨ Авто-распределение" fx:id="autoAllocateButton"
-                            onAction="#handleAutoAllocate" styleClass="action-button primary"/>
-
-                    <Button text="➕ Добавить груз" fx:id="addCargoButton"
-                            onAction="#handleAddCargo" styleClass="action-button"/>
-
-                    <Button text="💾 Сохранить изменения" fx:id="saveButton"
-                            onAction="#handleSave" styleClass="action-button success"/>
+                    <Button text="✨ Авто-распределение" fx:id="autoAllocateButton" onAction="#handleAutoAllocate" styleClass="action-button primary"/>
+                    <Button text="➕ Добавить груз" fx:id="addCargoButton" onAction="#handleAddCargo" styleClass="action-button"/>
+                    <Button text="💾 Сохранить изменения" fx:id="saveButton" onAction="#handleSave" styleClass="action-button success"/>
+                    <Button text="🗑 Удалить рейс" fx:id="deleteButton" onAction="#handleDelete" styleClass="action-button danger"/>
                 </VBox>
             </ScrollPane>
         </VBox>
     </right>
 
-    <!-- Нижняя панель (лог событий) -->
     <bottom>
         <VBox styleClass="log-panel" prefHeight="120.0">
-            <padding>
-                <Insets top="5" right="10" bottom="5" left="10"/>
-            </padding>
-
+            <padding><Insets top="5" right="10" bottom="5" left="10"/></padding>
             <Label text="📋 Журнал событий" styleClass="log-title"/>
             <TextArea fx:id="logArea" editable="false"
                       style="-fx-background-color: #1e272e; -fx-text-fill: #00d2d3; -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;"
