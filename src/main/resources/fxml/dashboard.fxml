@@ -166,7 +166,8 @@
             </padding>
 
             <Label text="📋 Журнал событий" styleClass="log-title"/>
-            <TextArea fx:id="logArea" editable="false" styleClass="log-area"
+            <TextArea fx:id="logArea" editable="false"
+                      style="-fx-background-color: #1e272e; -fx-text-fill: #00d2d3; -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;"
                       wrapText="true" VBox.vgrow="ALWAYS"/>
         </VBox>
     </bottom>

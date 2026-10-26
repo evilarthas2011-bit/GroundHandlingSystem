@@ -10,6 +10,7 @@ import java.util.List;
 
 public class AircraftRepository {
 
+
     public Aircraft save(Aircraft aircraft) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
@@ -51,6 +52,14 @@ public class AircraftRepository {
                 session.remove(aircraft);
             }
             transaction.commit();
+        }
+    }
+    public Aircraft update(Aircraft aircraft) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction transaction = session.beginTransaction();
+            session.merge(aircraft);
+            transaction.commit();
+            return aircraft;
         }
     }
 }
