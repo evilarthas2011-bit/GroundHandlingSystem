@@ -1,6 +1,7 @@
 package com.kuleshov.groundhandling.controller;
 
 import com.kuleshov.groundhandling.HibernateUtil;
+import com.kuleshov.groundhandling.MainApp;
 import com.kuleshov.groundhandling.domain.*;
 import com.kuleshov.groundhandling.repository.AircraftRepository;
 import com.kuleshov.groundhandling.repository.FlightRepository;
@@ -13,6 +14,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -51,6 +56,7 @@ public class DashboardController implements Initializable {
     @FXML private Button saveButton;
 
     @FXML private TextArea logArea;
+    @FXML private Button newFlightButton;
 
     private FlightRepository flightRepository;
     private ResourceRepository resourceRepository;
@@ -485,6 +491,31 @@ public class DashboardController implements Initializable {
             case DEPARTED -> "status-departed";
             case DELAYED -> "status-delayed";
         };
+    }
+
+    @FXML
+    private void handleNewFlight() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/flight-form.fxml"));
+            Parent root = loader.load();
+
+            FlightFormController controller = loader.getController();
+            controller.setOnFlightCreated(() -> {
+                loadFlights();
+                log("✅ Новый рейс успешно создан");
+            });
+
+            Stage stage = new Stage();
+            stage.setTitle("Создание нового рейса");
+            stage.setScene(new Scene(root));
+            stage.initOwner(MainApp.getPrimaryStage());
+            stage.setResizable(false);
+            stage.show();
+
+        } catch (Exception e) {
+            log("❌ Ошибка открытия формы: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void log(String message) {

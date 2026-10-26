@@ -14,6 +14,7 @@ import java.util.List;
 public class FlightRepository {
 
 
+
     public Flight save(Flight flight) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();

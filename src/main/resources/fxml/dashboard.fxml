@@ -43,6 +43,8 @@
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <Label text="Панель управления рейсами" styleClass="page-title"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <Button text="➕ Новый рейс" fx:id="newFlightButton" onAction="#handleNewFlight"
+                        style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 13px; -fx-background-radius: 5; -fx-cursor: hand;"/>
                 <Button text="🔄 Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
             </HBox>
 
