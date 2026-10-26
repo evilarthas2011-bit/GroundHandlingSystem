@@ -1,5 +1,7 @@
 package com.kuleshov.groundhandling.repository;
 
+import com.kuleshov.groundhandling.domain.Brigade;
+import com.kuleshov.groundhandling.domain.Equipment;
 import com.kuleshov.groundhandling.domain.Resource;
 import com.kuleshov.groundhandling.HibernateUtil;
 import org.hibernate.Session;
@@ -23,6 +25,21 @@ public class ResourceRepository {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                             "FROM Resource r WHERE r.isAvailable = true", Resource.class)
+                    .getResultList();
+        }
+    }
+    public List<Equipment> findAvailableEquipment() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                            "FROM Equipment e WHERE e.isAvailable = true", Equipment.class)
+                    .getResultList();
+        }
+    }
+
+    public List<Brigade> findAvailableBrigades() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                            "FROM Brigade b WHERE b.isAvailable = true", Brigade.class)
                     .getResultList();
         }
     }
