@@ -1,5 +1,6 @@
 package com.kuleshov.groundhandling;
 
+import com.kuleshov.groundhandling.domain.AircraftType;
 import com.kuleshov.groundhandling.domain.Flight;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -19,9 +20,7 @@ public class MainApp extends Application {
 
         try {
             Flight testFlight = new Flight(
-                    "SU-1234",
-                    "Boeing 737",
-                    LocalDateTime.now()
+                    "SU-1234", AircraftType.BOEING_737, LocalDateTime.now()
             );
 
             Session session = HibernateUtil.getSessionFactory().openSession();
