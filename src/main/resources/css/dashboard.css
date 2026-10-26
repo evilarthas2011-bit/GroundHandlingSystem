@@ -129,3 +129,40 @@
     -fx-font-family: "Consolas", monospace;
     -fx-font-size: 11px;
 }
+/* Цветные бейджи статусов */
+.status-badge {
+    -fx-padding: 4 10;
+    -fx-background-radius: 12;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+.status-scheduled {
+    -fx-background-color: #27ae60;
+}
+
+.status-arrived {
+    -fx-background-color: #2980b9; /* Синий — прибыл */
+}
+
+.status-loading {
+    -fx-background-color: #f39c12; /* Оранжевый — погрузка */
+}
+
+.status-boarding {
+    -fx-background-color: #3498db; /* Голубой — посадка */
+}
+
+.status-ready {
+    -fx-background-color: #1abc9c; /* Бирюзовый — готов к вылету */
+}
+
+.status-departed {
+    -fx-background-color: #7f8c8d; /* Серый — вылетел */
+}
+
+.status-delayed {
+    -fx-background-color: #e74c3c; /* Красный — задержка */
+}

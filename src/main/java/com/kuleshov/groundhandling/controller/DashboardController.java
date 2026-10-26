@@ -75,6 +75,7 @@ public class DashboardController implements Initializable {
         log("✅ Система инициализирована. Подключение к БД успешно.");
     }
 
+
     private void setupTableColumns() {
         flightNumberColumn.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleStringProperty(data.getValue().getFlightNumber()));
@@ -84,6 +85,34 @@ public class DashboardController implements Initializable {
 
         statusColumn.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleStringProperty(data.getValue().getStatus().toString()));
+
+        statusColumn.setCellFactory(col -> new TableCell<Flight, String>() {
+            private final Label badge = new Label();
+
+            {
+                badge.getStyleClass().add("status-badge");
+                setGraphic(badge);
+                setAlignment(javafx.geometry.Pos.CENTER);
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                } else {
+                    Flight flight = getTableView().getItems().get(getIndex());
+                    FlightStatus status = flight.getStatus();
+
+                    badge.setText(item);
+
+                    badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
+                    badge.getStyleClass().add(getStatusStyleClass(status));
+
+                    setGraphic(badge);
+                }
+            }
+        });
 
         weightColumn.setCellValueFactory(data -> {
             Flight flight = data.getValue();
@@ -99,7 +128,7 @@ public class DashboardController implements Initializable {
                 new javafx.beans.property.SimpleStringProperty("—"));
 
         actionsColumn.setCellFactory(col -> new TableCell<Flight, Void>() {
-            private final Button viewButton = new Button("👁 Детали");
+            private final Button viewButton = new Button(" Детали");
 
             {
                 viewButton.setOnAction(event -> {
@@ -119,7 +148,6 @@ public class DashboardController implements Initializable {
             }
         });
     }
-
     private void loadFlights() {
         try {
             List<Flight> flights = flightRepository.findAll();
@@ -362,6 +390,19 @@ public class DashboardController implements Initializable {
         }
 
         log("🔄 Панель обновлена. Общий вес: " + totalWeight + " кг");
+    }
+
+    private String getStatusStyleClass(FlightStatus status) {
+        if (status == null) return "status-scheduled";
+        return switch (status) {
+            case SCHEDULED -> "status-scheduled";
+            case ARRIVED -> "status-arrived";
+            case LOADING -> "status-loading";
+            case BOARDING -> "status-boarding";
+            case READY -> "status-ready";
+            case DEPARTED -> "status-departed";
+            case DELAYED -> "status-delayed";
+        };
     }
     private void log(String message) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
