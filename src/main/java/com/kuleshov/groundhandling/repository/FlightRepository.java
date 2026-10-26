@@ -3,6 +3,7 @@ package com.kuleshov.groundhandling.repository;
 import com.kuleshov.groundhandling.HibernateUtil;
 import com.kuleshov.groundhandling.domain.Cargo;
 import com.kuleshov.groundhandling.domain.Flight;
+import com.kuleshov.groundhandling.domain.Resource;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -69,6 +70,14 @@ public class FlightRepository {
             }
 
             return flight;
+        }
+    }
+    public List<Resource> findAssignedResources(Flight flight) {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                            "FROM Resource r WHERE r.assignedFlight = :flight", Resource.class)
+                    .setParameter("flight", flight)
+                    .getResultList();
         }
     }
     public Flight update(Flight flight) {

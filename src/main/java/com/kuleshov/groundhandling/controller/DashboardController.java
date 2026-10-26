@@ -14,7 +14,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 
-
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -75,7 +74,6 @@ public class DashboardController implements Initializable {
         log("✅ Система инициализирована. Подключение к БД успешно.");
     }
 
-
     private void setupTableColumns() {
         flightNumberColumn.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleStringProperty(data.getValue().getFlightNumber()));
@@ -105,7 +103,6 @@ public class DashboardController implements Initializable {
                     FlightStatus status = flight.getStatus();
 
                     badge.setText(item);
-
                     badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
                     badge.getStyleClass().add(getStatusStyleClass(status));
 
@@ -121,11 +118,27 @@ public class DashboardController implements Initializable {
             return new javafx.beans.property.SimpleStringProperty(String.format("%.0f / %.0f кг", current, max));
         });
 
-        equipmentColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty("—"));
+        equipmentColumn.setCellValueFactory(data -> {
+            Flight flight = data.getValue();
+            List<Resource> resources = flightRepository.findAssignedResources(flight);
+            for (Resource resource : resources) {
+                if (resource instanceof Equipment) {
+                    return new javafx.beans.property.SimpleStringProperty(((Equipment) resource).getModelName());
+                }
+            }
+            return new javafx.beans.property.SimpleStringProperty("—");
+        });
 
-        brigadeColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty("—"));
+        brigadeColumn.setCellValueFactory(data -> {
+            Flight flight = data.getValue();
+            List<Resource> resources = flightRepository.findAssignedResources(flight);
+            for (Resource resource : resources) {
+                if (resource instanceof Brigade) {
+                    return new javafx.beans.property.SimpleStringProperty(((Brigade) resource).getSpecialization());
+                }
+            }
+            return new javafx.beans.property.SimpleStringProperty("—");
+        });
 
         actionsColumn.setCellFactory(col -> new TableCell<Flight, Void>() {
             private final Button viewButton = new Button(" Детали");
@@ -148,6 +161,7 @@ public class DashboardController implements Initializable {
             }
         });
     }
+
     private void loadFlights() {
         try {
             List<Flight> flights = flightRepository.findAll();
@@ -181,76 +195,128 @@ public class DashboardController implements Initializable {
             return;
         }
 
-        detailFlightNumber.setText(selectedFlight.getFlightNumber());
-        detailAircraftType.setText(selectedFlight.getAircraftType().getDisplayName());
-        detailStatus.setText(selectedFlight.getStatus().toString());
+        updateFlightInfoPanel();
+        updateCompartmentsPanel();
+        updateResourceComboBoxes();
 
-        double totalWeight = selectedFlight.getTotalCargoWeight() != null
-                ? selectedFlight.getTotalCargoWeight() : 0;
-        detailTotalWeight.setText(String.format("%.0f кг", totalWeight));
-
-        compartmentsContainer.getChildren().clear();
-        if (selectedFlight.getAircraft() != null &&
-                selectedFlight.getAircraft().getCompartments() != null) {
-
-            for (Compartment compartment : selectedFlight.getAircraft().getCompartments()) {
-                VBox compartmentBox = new VBox(5);
-                compartmentBox.setStyle("-fx-padding: 10; -fx-background-color: #f8f9fa; -fx-background-radius: 5;");
-
-                Label nameLabel = new Label(compartment.getName());
-                nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
-
-                double current = compartment.getCurrentWeight() != null ? compartment.getCurrentWeight() : 0;
-                double max = compartment.getMaxWeight() != null ? compartment.getMaxWeight() : 1;
-
-                Label weightLabel = new Label(String.format("Загрузка: %.0f / %.0f кг (%.0f%%)",
-                        current, max, (current / max) * 100));
-
-                ProgressBar progressBar = new ProgressBar();
-                progressBar.setProgress(current / max);
-                progressBar.setPrefWidth(250);
-
-                if (current / max > 0.9) {
-                    progressBar.setStyle("-fx-accent: #e74c3c;"); // Красный — почти полный
-                } else if (current / max > 0.7) {
-                    progressBar.setStyle("-fx-accent: #f39c12;"); // Жёлтый — средне
-                } else {
-                    progressBar.setStyle("-fx-accent: #27ae60;"); // Зелёный — нормально
-                }
-
-                compartmentBox.getChildren().addAll(nameLabel, weightLabel, progressBar);
-                compartmentsContainer.getChildren().add(compartmentBox);
-            }
-        } else {
-            Label noAircraft = new Label("⚠ ВС не назначено");
-            noAircraft.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 13px;");
-            compartmentsContainer.getChildren().add(noAircraft);
-        }
-
-        List<Resource> assignedResources = resourceRepository.findByAssignedFlight(selectedFlight);
-
-        String assignedEquipmentName = "— Не назначено —";
-        String assignedBrigadeName = "— Не назначено —";
-
-        for (Resource resource : assignedResources) {
-            if (resource instanceof Equipment) {
-                assignedEquipmentName = ((Equipment) resource).getModelName();
-            } else if (resource instanceof Brigade) {
-                assignedBrigadeName = ((Brigade) resource).getSpecialization();
-            }
-        }
-        List<Equipment> availableEquipment = resourceRepository.findAvailableEquipment();
-        ObservableList<Equipment> equipmentList = FXCollections.observableArrayList(availableEquipment);
-        equipmentComboBox.setItems(equipmentList);
-
-        List<Brigade> availableBrigades = resourceRepository.findAvailableBrigades();
-        ObservableList<Brigade> brigadeList = FXCollections.observableArrayList(availableBrigades);
-        brigadeComboBox.setItems(brigadeList);
         detailsPanel.setVisible(true);
         detailsPanel.setManaged(true);
         detailsPanel.getParent().requestLayout();
 
         log("🔍 Открыты детали рейса " + selectedFlight.getFlightNumber());
+    }
+
+    private void updateFlightInfoPanel() {
+        detailFlightNumber.setText(selectedFlight.getFlightNumber());
+        detailAircraftType.setText(selectedFlight.getAircraftType().getDisplayName());
+        detailStatus.setText(selectedFlight.getStatus().toString());
+
+        double totalWeight = selectedFlight.getTotalCargoWeight() != null ? selectedFlight.getTotalCargoWeight() : 0;
+        detailTotalWeight.setText(String.format("%.0f кг", totalWeight));
+    }
+
+    private void updateCompartmentsPanel() {
+        compartmentsContainer.getChildren().clear();
+
+        if (selectedFlight.getAircraft() == null || selectedFlight.getAircraft().getCompartments() == null) {
+            Label noAircraft = new Label("⚠ ВС не назначено");
+            noAircraft.setStyle("-fx-text-fill: #e74c3c; -fx-font-size: 13px;");
+            compartmentsContainer.getChildren().add(noAircraft);
+            return;
+        }
+
+        for (Compartment compartment : selectedFlight.getAircraft().getCompartments()) {
+            compartmentsContainer.getChildren().add(createCompartmentBox(compartment));
+        }
+    }
+
+    private VBox createCompartmentBox(Compartment compartment) {
+        VBox compartmentBox = new VBox(5);
+        compartmentBox.setStyle("-fx-padding: 10; -fx-background-color: #f8f9fa; -fx-background-radius: 5;");
+
+        Label nameLabel = new Label(compartment.getName());
+        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
+
+        double current = compartment.getCurrentWeight() != null ? compartment.getCurrentWeight() : 0;
+        double max = compartment.getMaxWeight() != null ? compartment.getMaxWeight() : 1;
+        double ratio = current / max;
+
+        Label weightLabel = new Label(String.format("Загрузка: %.0f / %.0f кг (%.0f%%)", current, max, ratio * 100));
+
+        ProgressBar progressBar = new ProgressBar();
+        progressBar.setProgress(ratio);
+        progressBar.setPrefWidth(250);
+        progressBar.setStyle("-fx-accent: " + getProgressBarColor(ratio) + ";");
+
+        compartmentBox.getChildren().addAll(nameLabel, weightLabel, progressBar);
+        return compartmentBox;
+    }
+
+    private String getProgressBarColor(double ratio) {
+        if (ratio > 0.9) return "#e74c3c";
+        if (ratio > 0.7) return "#f39c12";
+        return "#27ae60";
+    }
+
+    private void updateResourceComboBoxes() {
+        List<Resource> assignedResources = resourceRepository.findByAssignedFlight(selectedFlight);
+
+        Equipment assignedEquipment = null;
+        Brigade assignedBrigade = null;
+
+        for (Resource resource : assignedResources) {
+            if (resource instanceof Equipment) {
+                assignedEquipment = (Equipment) resource;
+            } else if (resource instanceof Brigade) {
+                assignedBrigade = (Brigade) resource;
+            }
+        }
+
+        List<Equipment> availableEquipment = resourceRepository.findAvailableEquipment();
+        equipmentComboBox.setItems(FXCollections.observableArrayList(availableEquipment));
+        equipmentComboBox.getSelectionModel().select(assignedEquipment);
+        setupEquipmentComboBoxDisplay();
+
+        List<Brigade> availableBrigades = resourceRepository.findAvailableBrigades();
+        brigadeComboBox.setItems(FXCollections.observableArrayList(availableBrigades));
+        brigadeComboBox.getSelectionModel().select(assignedBrigade);
+        setupBrigadeComboBoxDisplay();
+    }
+
+    private void setupEquipmentComboBoxDisplay() {
+        equipmentComboBox.setCellFactory(param -> new ListCell<Equipment>() {
+            @Override
+            protected void updateItem(Equipment item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getModelName());
+            }
+        });
+
+        equipmentComboBox.setButtonCell(new ListCell<Equipment>() {
+            @Override
+            protected void updateItem(Equipment item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getModelName());
+            }
+        });
+    }
+
+    private void setupBrigadeComboBoxDisplay() {
+        brigadeComboBox.setCellFactory(param -> new ListCell<Brigade>() {
+            @Override
+            protected void updateItem(Brigade item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getSpecialization());
+            }
+        });
+
+        brigadeComboBox.setButtonCell(new ListCell<Brigade>() {
+            @Override
+            protected void updateItem(Brigade item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.getSpecialization());
+            }
+        });
     }
 
     @FXML
@@ -288,9 +354,7 @@ public class DashboardController implements Initializable {
             return;
         }
 
-        if (selectedFlight.getAircraft() == null ||
-                selectedFlight.getAircraft().getCompartments() == null ||
-                selectedFlight.getAircraft().getCompartments().isEmpty()) {
+        if (selectedFlight.getAircraft() == null || selectedFlight.getAircraft().getCompartments() == null || selectedFlight.getAircraft().getCompartments().isEmpty()) {
             log("⚠ У рейса нет ВС или отсеков!");
             return;
         }
@@ -310,20 +374,18 @@ public class DashboardController implements Initializable {
             log("✅ Груз 500 кг добавлен в отсек '" + firstCompartment.getName() + "'");
 
             aircraftRepository.update(freshFlight.getAircraft());
-
             flightRepository.update(freshFlight);
 
             log("💾 Данные сохранены в базу данных.");
 
             selectedFlight = freshFlight;
-
             updateDetailsPanel(freshFlight);
-
             loadFlights();
         } else {
             log("❌ Не удалось добавить груз: превышен лимит веса!");
         }
     }
+
     @FXML
     private void handleRefresh() {
         log("🔄 Обновление данных...");
@@ -333,13 +395,37 @@ public class DashboardController implements Initializable {
     @FXML
     private void handleSave() {
         if (selectedFlight == null) {
-            log(" Нечего сохранять!");
+            log("⚠ Нечего сохранять!");
             return;
         }
 
         try {
+            List<Resource> oldResources = resourceRepository.findByAssignedFlight(selectedFlight);
+            for (Resource oldResource : oldResources) {
+                oldResource.setAssignedFlight(null);
+                resourceRepository.update(oldResource);
+            }
+
+            Equipment selectedEquipment = equipmentComboBox.getValue();
+            Brigade selectedBrigade = brigadeComboBox.getValue();
+
+            if (selectedEquipment != null) {
+                selectedEquipment.setAssignedFlight(selectedFlight);
+                resourceRepository.update(selectedEquipment);
+                log("✅ Назначена техника: " + selectedEquipment.getModelName());
+            }
+
+            if (selectedBrigade != null) {
+                selectedBrigade.setAssignedFlight(selectedFlight);
+                resourceRepository.update(selectedBrigade);
+                log("✅ Назначена бригада: " + selectedBrigade.getSpecialization());
+            }
+
             flightRepository.update(selectedFlight);
-            log("💾 Рейс " + selectedFlight.getFlightNumber() + " сохранён в БД.");
+            log(" Рейс " + selectedFlight.getFlightNumber() + " сохранён в БД.");
+
+            loadFlights();
+            flightsTable.refresh();
         } catch (Exception e) {
             log("❌ Ошибка сохранения: " + e.getMessage());
             e.printStackTrace();
@@ -347,13 +433,11 @@ public class DashboardController implements Initializable {
     }
 
     private void updateDetailsPanel(Flight flight) {
-
         detailFlightNumber.setText(flight.getFlightNumber());
         detailAircraftType.setText(flight.getAircraftType().getDisplayName());
         detailStatus.setText(flight.getStatus().toString());
 
-        double totalWeight = flight.getTotalCargoWeight() != null
-                ? flight.getTotalCargoWeight() : 0;
+        double totalWeight = flight.getTotalCargoWeight() != null ? flight.getTotalCargoWeight() : 0;
         detailTotalWeight.setText(String.format("%.0f кг", totalWeight));
 
         compartmentsContainer.getChildren().clear();
@@ -368,13 +452,11 @@ public class DashboardController implements Initializable {
                 double current = compartment.getCurrentWeight() != null ? compartment.getCurrentWeight() : 0;
                 double max = compartment.getMaxWeight() != null ? compartment.getMaxWeight() : 1;
 
-                Label weightLabel = new Label(String.format("Загрузка: %.0f / %.0f кг (%.0f%%)",
-                        current, max, (current / max) * 100));
+                Label weightLabel = new Label(String.format("Загрузка: %.0f / %.0f кг (%.0f%%)", current, max, (current / max) * 100));
 
                 ProgressBar progressBar = new ProgressBar();
                 progressBar.setProgress(current / max);
                 progressBar.setPrefWidth(250);
-
 
                 if (current / max > 0.9) {
                     progressBar.setStyle("-fx-accent: #e74c3c;");
@@ -404,6 +486,7 @@ public class DashboardController implements Initializable {
             case DELAYED -> "status-delayed";
         };
     }
+
     private void log(String message) {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
         logArea.appendText("[" + timestamp + "] " + message + "\n");
