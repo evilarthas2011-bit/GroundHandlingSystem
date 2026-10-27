@@ -5,8 +5,7 @@ import com.kuleshov.groundhandling.domain.*;
 import com.kuleshov.groundhandling.repository.AircraftRepository;
 import com.kuleshov.groundhandling.repository.FlightRepository;
 import com.kuleshov.groundhandling.repository.ResourceRepository;
-import com.kuleshov.groundhandling.service.ResourceAllocationService;
-import com.kuleshov.groundhandling.service.WeightBalanceService;
+import com.kuleshov.groundhandling.service.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
@@ -69,6 +68,8 @@ public class DashboardController implements Initializable {
     private WeightBalanceService weightBalanceService;
     private ResourceAllocationService allocationService;
     private AircraftRepository aircraftRepository;
+    private FlightManagementService flightManagementService;
+
     private Flight selectedFlight;
     private Timeline autoRefreshTimeline;
 
@@ -79,6 +80,9 @@ public class DashboardController implements Initializable {
         weightBalanceService = new WeightBalanceService();
         allocationService = new ResourceAllocationService(resourceRepository);
         aircraftRepository = new AircraftRepository();
+        flightManagementService = new FlightManagementServiceImpl(
+                flightRepository, resourceRepository, aircraftRepository, weightBalanceService
+        );
 
         setupTableColumns();
         setupStatusComboBox();
@@ -209,7 +213,7 @@ public class DashboardController implements Initializable {
 
         equipmentColumn.setCellValueFactory(data -> {
             try {
-                List<Resource> res = flightRepository.findAssignedResources(data.getValue());
+                List<Resource> res = flightManagementService.getAssignedResources(data.getValue());
                 for (Resource r : res) if (r instanceof Equipment) return new javafx.beans.property.SimpleStringProperty(((Equipment) r).getModelName());
             } catch (Exception ignored) {}
             return new javafx.beans.property.SimpleStringProperty("—");
@@ -217,7 +221,7 @@ public class DashboardController implements Initializable {
 
         brigadeColumn.setCellValueFactory(data -> {
             try {
-                List<Resource> res = flightRepository.findAssignedResources(data.getValue());
+                List<Resource> res = flightManagementService.getAssignedResources(data.getValue());
                 for (Resource r : res) if (r instanceof Brigade) return new javafx.beans.property.SimpleStringProperty(((Brigade) r).getSpecialization());
             } catch (Exception ignored) {}
             return new javafx.beans.property.SimpleStringProperty("—");
@@ -281,7 +285,7 @@ public class DashboardController implements Initializable {
         setupEquipmentComboBoxDisplay();
         setupBrigadeComboBoxDisplay();
 
-        List<Resource> assigned = resourceRepository.findByAssignedFlight(selectedFlight);
+        List<Resource> assigned = flightManagementService.getAssignedResources(selectedFlight);
         for (Resource r : assigned) {
             if (r instanceof Equipment) equipmentComboBox.getSelectionModel().select((Equipment) r);
             if (r instanceof Brigade) brigadeComboBox.getSelectionModel().select((Brigade) r);
@@ -358,7 +362,7 @@ public class DashboardController implements Initializable {
     @FXML
     private void handleAddCargo() {
         if (selectedFlight == null || compartmentComboBox.getValue() == null) {
-            log("Выберите отсек!");
+            showWarning("Внимание", "Выберите отсек!");
             return;
         }
 
@@ -372,70 +376,64 @@ public class DashboardController implements Initializable {
             }
         }
 
-        Compartment comp = compartmentComboBox.getValue();
-        Cargo cargo = new Cargo(weight, "Груз", comp, selectedFlight);
+        OperationResult result = flightManagementService.addCargoToFlight(
+                selectedFlight.getId(),
+                compartmentComboBox.getValue().getId(),
+                weight
+        );
 
-        if (weightBalanceService.validateAndAddCargo(selectedFlight, cargo)) {
-            try {
-                aircraftRepository.update(selectedFlight.getAircraft());
-                flightRepository.update(selectedFlight);
-                log("Добавлено " + weight + " кг в отсек '" + comp.getName() + "'");
-                showFlightDetails(selectedFlight);
-                loadFlights();
-                if (cargoWeightField != null) cargoWeightField.clear();
-            } catch (Exception e) {
-                log("Ошибка сохранения: " + e.getMessage());
-                showError("Ошибка сохранения", "Не удалось сохранить данные о грузе.\n" + e.getMessage());
-            }
+        if (result.isSuccess()) {
+            log(result.getMessage());
+            showFlightDetails(selectedFlight);
+            loadFlights();
+            cargoWeightField.clear();
         } else {
-            log("Превышен лимит веса!");
-            showWarning("Превышение лимита", "Добавление груза превысит допустимый вес отсека или общую грузоподъемность самолета.");
+            showWarning("Ошибка операции", result.getMessage());
+            log("Ошибка: " + result.getMessage());
         }
     }
 
     @FXML
     private void handleUnloadCargo() {
         if (selectedFlight == null || compartmentComboBox.getValue() == null) {
-            log("Выберите отсек!");
+            showWarning("Внимание", "Выберите отсек!");
             return;
         }
 
-        Compartment comp = compartmentComboBox.getValue();
-        if (weightBalanceService.unloadLastCargo(selectedFlight, comp)) {
-            try {
-                aircraftRepository.update(selectedFlight.getAircraft());
-                flightRepository.update(selectedFlight);
-                log("Груз из отсека '" + comp.getName() + "' разгружен");
-                showFlightDetails(selectedFlight);
-                loadFlights();
-            } catch (Exception e) {
-                log("Ошибка сохранения: " + e.getMessage());
-                showError("Ошибка сохранения", "Не удалось сохранить данные о разгрузке.\n" + e.getMessage());
-            }
+        OperationResult result = flightManagementService.unloadLastCargoFromFlight(
+                selectedFlight.getId(),
+                compartmentComboBox.getValue().getId()
+        );
+
+        if (result.isSuccess()) {
+            log(result.getMessage());
+            showFlightDetails(selectedFlight);
+            loadFlights();
         } else {
-            log("Отсек пуст!");
-            showWarning("Отсек пуст", "В выбранном отсеке нет груза для разгрузки.");
+            showWarning("Ошибка операции", result.getMessage());
+            log("Ошибка: " + result.getMessage());
         }
     }
 
     @FXML
     private void handleSave() {
         if (selectedFlight == null) return;
-        try {
-            List<Resource> old = resourceRepository.findByAssignedFlight(selectedFlight);
-            for (Resource r : old) { r.setAssignedFlight(null); resourceRepository.update(r); }
 
-            Equipment eq = equipmentComboBox.getValue();
-            Brigade br = brigadeComboBox.getValue();
-            if (eq != null) { eq.setAssignedFlight(selectedFlight); resourceRepository.update(eq); log("Назначена техника: " + eq.getModelName()); }
-            if (br != null) { br.setAssignedFlight(selectedFlight); resourceRepository.update(br); log("Назначена бригада: " + br.getSpecialization()); }
+        Long equipmentId = equipmentComboBox.getValue() != null ? equipmentComboBox.getValue().getId() : null;
+        Long brigadeId = brigadeComboBox.getValue() != null ? brigadeComboBox.getValue().getId() : null;
 
-            flightRepository.update(selectedFlight);
-            log("Рейс " + selectedFlight.getFlightNumber() + " сохранен.");
+        OperationResult result = flightManagementService.assignResources(
+                selectedFlight.getId(),
+                equipmentId,
+                brigadeId
+        );
+
+        if (result.isSuccess()) {
+            log(result.getMessage());
             loadFlights();
-        } catch (Exception e) {
-            log("Ошибка: " + e.getMessage());
-            showError("Ошибка сохранения", "Не удалось сохранить изменения.\n" + e.getMessage());
+        } else {
+            showError("Ошибка сохранения", result.getMessage());
+            log("Ошибка: " + result.getMessage());
         }
     }
 
@@ -467,14 +465,14 @@ public class DashboardController implements Initializable {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Удалить рейс " + selectedFlight.getFlightNumber() + "?");
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                try {
-                    flightRepository.delete(selectedFlight);
-                    log("Рейс удален.");
+                OperationResult result = flightManagementService.deleteFlight(selectedFlight.getId());
+                if (result.isSuccess()) {
+                    log(result.getMessage());
                     handleCloseDetails();
                     loadFlights();
-                } catch (Exception e) {
-                    log("Ошибка удаления: " + e.getMessage());
-                    showError("Ошибка удаления", "Не удалось удалить рейс.\n" + e.getMessage());
+                } else {
+                    showError("Ошибка удаления", result.getMessage());
+                    log("Ошибка: " + result.getMessage());
                 }
             }
         });

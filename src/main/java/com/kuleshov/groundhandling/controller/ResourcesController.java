@@ -2,6 +2,9 @@ package com.kuleshov.groundhandling.controller;
 
 import com.kuleshov.groundhandling.domain.*;
 import com.kuleshov.groundhandling.repository.ResourceRepository;
+import com.kuleshov.groundhandling.service.OperationResult;
+import com.kuleshov.groundhandling.service.ResourceManagementService;
+import com.kuleshov.groundhandling.service.ResourceManagementServiceImpl;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -32,12 +35,14 @@ public class ResourcesController implements Initializable {
     @FXML private TableColumn<Brigade, Void> brigadeActionColumn;
 
     private ResourceRepository resourceRepository;
+    private ResourceManagementService resourceManagementService;
     private ObservableList<Equipment> allEquipment;
     private ObservableList<Brigade> allBrigades;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         resourceRepository = new ResourceRepository();
+        resourceManagementService = new ResourceManagementServiceImpl(resourceRepository);
         allEquipment = FXCollections.observableArrayList();
         allBrigades = FXCollections.observableArrayList();
 
@@ -91,16 +96,17 @@ public class ResourcesController implements Initializable {
 
         equipmentActionColumn.setCellFactory(col -> new TableCell<>() {
             private final Button releaseButton = new Button("Освободить");
-            private final Button deleteButton = new Button(" Удалить");
+            private final Button deleteButton = new Button("Удалить");
 
             {
                 releaseButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
                 releaseButton.setOnAction(event -> {
                     Equipment eq = getTableView().getItems().get(getIndex());
-                    if (eq.getAssignedFlight() != null) {
-                        eq.setAssignedFlight(null);
-                        resourceRepository.update(eq);
+                    OperationResult result = resourceManagementService.freeResource(eq.getId());
+                    if (result.isSuccess()) {
                         loadResources();
+                    } else {
+                        new Alert(Alert.AlertType.WARNING, result.getMessage()).show();
                     }
                 });
 
@@ -113,8 +119,12 @@ public class ResourcesController implements Initializable {
                         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Удалить \"" + eq.getModelName() + "\"?");
                         confirm.showAndWait().ifPresent(r -> {
                             if (r == ButtonType.OK) {
-                                resourceRepository.delete(eq);
-                                loadResources();
+                                OperationResult result = resourceManagementService.deleteResource(eq.getId());
+                                if (result.isSuccess()) {
+                                    loadResources();
+                                } else {
+                                    new Alert(Alert.AlertType.ERROR, result.getMessage()).show();
+                                }
                             }
                         });
                     }
@@ -181,16 +191,17 @@ public class ResourcesController implements Initializable {
 
         brigadeActionColumn.setCellFactory(col -> new TableCell<>() {
             private final Button releaseButton = new Button("Освободить");
-            private final Button deleteButton = new Button(" Удалить");
+            private final Button deleteButton = new Button("Удалить");
 
             {
                 releaseButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
                 releaseButton.setOnAction(event -> {
                     Brigade br = getTableView().getItems().get(getIndex());
-                    if (br.getAssignedFlight() != null) {
-                        br.setAssignedFlight(null);
-                        resourceRepository.update(br);
+                    OperationResult result = resourceManagementService.freeResource(br.getId());
+                    if (result.isSuccess()) {
                         loadResources();
+                    } else {
+                        new Alert(Alert.AlertType.WARNING, result.getMessage()).show();
                     }
                 });
 
@@ -203,8 +214,12 @@ public class ResourcesController implements Initializable {
                         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Удалить \"" + br.getSpecialization() + "\"?");
                         confirm.showAndWait().ifPresent(r -> {
                             if (r == ButtonType.OK) {
-                                resourceRepository.delete(br);
-                                loadResources();
+                                OperationResult result = resourceManagementService.deleteResource(br.getId());
+                                if (result.isSuccess()) {
+                                    loadResources();
+                                } else {
+                                    new Alert(Alert.AlertType.ERROR, result.getMessage()).show();
+                                }
                             }
                         });
                     }
@@ -262,8 +277,8 @@ public class ResourcesController implements Initializable {
         alert.setTitle("Добавление ресурса");
         alert.setHeaderText("Выберите тип ресурса");
 
-        ButtonType equipmentType = new ButtonType("🚜 Техника");
-        ButtonType brigadeType = new ButtonType("👷 Бригада");
+        ButtonType equipmentType = new ButtonType("Техника");
+        ButtonType brigadeType = new ButtonType("Бригада");
         ButtonType cancelType = new ButtonType("Отмена", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         alert.getButtonTypes().setAll(equipmentType, brigadeType, cancelType);
@@ -294,7 +309,7 @@ public class ResourcesController implements Initializable {
 
         grid.add(new Label("Модель:"), 0, 0);
         grid.add(modelNameField, 1, 0);
-        grid.add(new Label("Грузоподъёмность (кг):"), 0, 1);
+        grid.add(new Label("Грузоподъемность (кг):"), 0, 1);
         grid.add(capacityField, 1, 1);
 
         dialog.getDialogPane().setContent(grid);
