@@ -8,8 +8,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 
 import java.net.URL;
 import java.util.List;
@@ -19,27 +19,16 @@ public class ResourcesController implements Initializable {
 
     @FXML private Button addResourceButton;
     @FXML private Button refreshButton;
-    @FXML private Label totalResourcesLabel;
-    @FXML private Label equipmentCountLabel;
-    @FXML private Label brigadeCountLabel;
-    @FXML private Label freeResourcesLabel;
-    @FXML private Label busyResourcesLabel;
-    @FXML private ComboBox<String> filterTypeComboBox;
-    @FXML private ComboBox<String> filterStatusComboBox;
-    @FXML private TextField searchField;
+    @FXML private Label totalResourcesLabel, equipmentCountLabel, brigadeCountLabel, freeResourcesLabel, busyResourcesLabel;
 
     @FXML private TableView<Equipment> equipmentTable;
-    @FXML private TableColumn<Equipment, String> equipmentNameColumn;
+    @FXML private TableColumn<Equipment, String> equipmentNameColumn, equipmentStatusColumn, equipmentFlightColumn;
     @FXML private TableColumn<Equipment, Double> equipmentCapacityColumn;
-    @FXML private TableColumn<Equipment, String> equipmentStatusColumn;
-    @FXML private TableColumn<Equipment, String> equipmentFlightColumn;
     @FXML private TableColumn<Equipment, Void> equipmentActionColumn;
 
     @FXML private TableView<Brigade> brigadeTable;
-    @FXML private TableColumn<Brigade, String> brigadeNameColumn;
+    @FXML private TableColumn<Brigade, String> brigadeNameColumn, brigadeStatusColumn, brigadeFlightColumn;
     @FXML private TableColumn<Brigade, Integer> brigadeSizeColumn;
-    @FXML private TableColumn<Brigade, String> brigadeStatusColumn;
-    @FXML private TableColumn<Brigade, String> brigadeFlightColumn;
     @FXML private TableColumn<Brigade, Void> brigadeActionColumn;
 
     private ResourceRepository resourceRepository;
@@ -52,32 +41,25 @@ public class ResourcesController implements Initializable {
         allEquipment = FXCollections.observableArrayList();
         allBrigades = FXCollections.observableArrayList();
 
-        setupFilters();
         setupEquipmentTable();
         setupBrigadeTable();
         loadResources();
-
-        searchField.textProperty().addListener((obs, oldVal, newVal) -> filterResources());
-    }
-
-    private void setupFilters() {
-        filterTypeComboBox.setItems(FXCollections.observableArrayList("Все", "Техника", "Бригады"));
-        filterTypeComboBox.setValue("Все");
-        filterTypeComboBox.setOnAction(e -> filterResources());
-
-        filterStatusComboBox.setItems(FXCollections.observableArrayList("Все", "Свободен", "Занят"));
-        filterStatusComboBox.setValue("Все");
-        filterStatusComboBox.setOnAction(e -> filterResources());
     }
 
     private void setupEquipmentTable() {
-        equipmentNameColumn.setCellValueFactory(new PropertyValueFactory<>("modelName"));
+        equipmentNameColumn.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleStringProperty(data.getValue().getModelName()));
+
         equipmentCapacityColumn.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleObjectProperty<>(data.getValue().getLoadCapacity()));
 
         equipmentStatusColumn.setCellValueFactory(data -> {
-            String status = data.getValue().getAssignedFlight() != null ? "Занят" : "Свободен";
-            return new javafx.beans.property.SimpleStringProperty(status);
+            try {
+                String status = data.getValue().getAssignedFlight() != null ? "Занят" : "Свободен";
+                return new javafx.beans.property.SimpleStringProperty(status);
+            } catch (Exception e) {
+                return new javafx.beans.property.SimpleStringProperty("Свободен");
+            }
         });
 
         equipmentStatusColumn.setCellFactory(col -> new TableCell<>() {
@@ -90,55 +72,84 @@ public class ResourcesController implements Initializable {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                } else {
-                    badge.setText(item);
-                    badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
-                    badge.getStyleClass().add(item.equals("Свободен") ? "status-scheduled" : "status-delayed");
-                    setGraphic(badge);
-                }
+                if (empty || item == null) { setGraphic(null); return; }
+                badge.setText(item);
+                badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
+                badge.getStyleClass().add(item.equals("Свободен") ? "status-scheduled" : "status-delayed");
+                setGraphic(badge);
             }
         });
 
         equipmentFlightColumn.setCellValueFactory(data -> {
-            Flight flight = data.getValue().getAssignedFlight();
-            return new javafx.beans.property.SimpleStringProperty(flight != null ? flight.getFlightNumber() : "—");
+            try {
+                Flight flight = data.getValue().getAssignedFlight();
+                return new javafx.beans.property.SimpleStringProperty(flight != null ? flight.getFlightNumber() : "—");
+            } catch (Exception e) {
+                return new javafx.beans.property.SimpleStringProperty("—");
+            }
         });
 
         equipmentActionColumn.setCellFactory(col -> new TableCell<>() {
             private final Button releaseButton = new Button("Освободить");
+            private final Button deleteButton = new Button(" Удалить");
+
             {
-                releaseButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
+                releaseButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
                 releaseButton.setOnAction(event -> {
-                    Equipment equipment = getTableView().getItems().get(getIndex());
-                    if (equipment.getAssignedFlight() != null) {
-                        equipment.setAssignedFlight(null);
-                        resourceRepository.update(equipment);
+                    Equipment eq = getTableView().getItems().get(getIndex());
+                    if (eq.getAssignedFlight() != null) {
+                        eq.setAssignedFlight(null);
+                        resourceRepository.update(eq);
                         loadResources();
                     }
                 });
+
+                deleteButton.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
+                deleteButton.setOnAction(event -> {
+                    Equipment eq = getTableView().getItems().get(getIndex());
+                    if (eq.getAssignedFlight() != null) {
+                        new Alert(Alert.AlertType.WARNING, "Сначала освободите ресурс!").show();
+                    } else {
+                        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Удалить \"" + eq.getModelName() + "\"?");
+                        confirm.showAndWait().ifPresent(r -> {
+                            if (r == ButtonType.OK) {
+                                resourceRepository.delete(eq);
+                                loadResources();
+                            }
+                        });
+                    }
+                });
             }
+
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
+                if (empty) { setGraphic(null); return; }
+                Equipment eq = getTableView().getItems().get(getIndex());
+                if (eq.getAssignedFlight() != null) {
+                    HBox buttons = new HBox(5, releaseButton, deleteButton);
+                    setGraphic(buttons);
                 } else {
-                    Equipment eq = getTableView().getItems().get(getIndex());
-                    setGraphic(eq.getAssignedFlight() != null ? releaseButton : null);
+                    setGraphic(deleteButton);
                 }
             }
         });
     }
 
     private void setupBrigadeTable() {
-        brigadeNameColumn.setCellValueFactory(new PropertyValueFactory<>("specialization"));
-        brigadeSizeColumn.setCellValueFactory(new PropertyValueFactory<>("size"));
+        brigadeNameColumn.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleStringProperty(data.getValue().getSpecialization()));
+
+        brigadeSizeColumn.setCellValueFactory(data ->
+                new javafx.beans.property.SimpleObjectProperty<>(data.getValue().getSize()));
 
         brigadeStatusColumn.setCellValueFactory(data -> {
-            String status = data.getValue().getAssignedFlight() != null ? "Занят" : "Свободен";
-            return new javafx.beans.property.SimpleStringProperty(status);
+            try {
+                String status = data.getValue().getAssignedFlight() != null ? "Занят" : "Свободен";
+                return new javafx.beans.property.SimpleStringProperty(status);
+            } catch (Exception e) {
+                return new javafx.beans.property.SimpleStringProperty("Свободен");
+            }
         });
 
         brigadeStatusColumn.setCellFactory(col -> new TableCell<>() {
@@ -151,43 +162,65 @@ public class ResourcesController implements Initializable {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) {
-                    setGraphic(null);
-                } else {
-                    badge.setText(item);
-                    badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
-                    badge.getStyleClass().add(item.equals("Свободен") ? "status-scheduled" : "status-delayed");
-                    setGraphic(badge);
-                }
+                if (empty || item == null) { setGraphic(null); return; }
+                badge.setText(item);
+                badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
+                badge.getStyleClass().add(item.equals("Свободен") ? "status-scheduled" : "status-delayed");
+                setGraphic(badge);
             }
         });
 
         brigadeFlightColumn.setCellValueFactory(data -> {
-            Flight flight = data.getValue().getAssignedFlight();
-            return new javafx.beans.property.SimpleStringProperty(flight != null ? flight.getFlightNumber() : "—");
+            try {
+                Flight flight = data.getValue().getAssignedFlight();
+                return new javafx.beans.property.SimpleStringProperty(flight != null ? flight.getFlightNumber() : "—");
+            } catch (Exception e) {
+                return new javafx.beans.property.SimpleStringProperty("—");
+            }
         });
 
         brigadeActionColumn.setCellFactory(col -> new TableCell<>() {
             private final Button releaseButton = new Button("Освободить");
+            private final Button deleteButton = new Button(" Удалить");
+
             {
-                releaseButton.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
+                releaseButton.setStyle("-fx-background-color: #e67e22; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
                 releaseButton.setOnAction(event -> {
-                    Brigade brigade = getTableView().getItems().get(getIndex());
-                    if (brigade.getAssignedFlight() != null) {
-                        brigade.setAssignedFlight(null);
-                        resourceRepository.update(brigade);
+                    Brigade br = getTableView().getItems().get(getIndex());
+                    if (br.getAssignedFlight() != null) {
+                        br.setAssignedFlight(null);
+                        resourceRepository.update(br);
                         loadResources();
                     }
                 });
+
+                deleteButton.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-padding: 5 10; -fx-background-radius: 3; -fx-cursor: hand;");
+                deleteButton.setOnAction(event -> {
+                    Brigade br = getTableView().getItems().get(getIndex());
+                    if (br.getAssignedFlight() != null) {
+                        new Alert(Alert.AlertType.WARNING, "Сначала освободите ресурс!").show();
+                    } else {
+                        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Удалить \"" + br.getSpecialization() + "\"?");
+                        confirm.showAndWait().ifPresent(r -> {
+                            if (r == ButtonType.OK) {
+                                resourceRepository.delete(br);
+                                loadResources();
+                            }
+                        });
+                    }
+                });
             }
+
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
-                    setGraphic(null);
+                if (empty) { setGraphic(null); return; }
+                Brigade br = getTableView().getItems().get(getIndex());
+                if (br.getAssignedFlight() != null) {
+                    HBox buttons = new HBox(5, releaseButton, deleteButton);
+                    setGraphic(buttons);
                 } else {
-                    Brigade br = getTableView().getItems().get(getIndex());
-                    setGraphic(br.getAssignedFlight() != null ? releaseButton : null);
+                    setGraphic(deleteButton);
                 }
             }
         });
@@ -196,53 +229,23 @@ public class ResourcesController implements Initializable {
     private void loadResources() {
         try {
             List<Resource> allResources = resourceRepository.findAll();
-
             allEquipment.clear();
             allBrigades.clear();
-
             for (Resource resource : allResources) {
-                if (resource instanceof Equipment) {
-                    allEquipment.add((Equipment) resource);
-                } else if (resource instanceof Brigade) {
-                    allBrigades.add((Brigade) resource);
-                }
+                if (resource instanceof Equipment) allEquipment.add((Equipment) resource);
+                else if (resource instanceof Brigade) allBrigades.add((Brigade) resource);
             }
-
-            filterResources();
+            equipmentTable.setItems(allEquipment);
+            brigadeTable.setItems(allBrigades);
             updateStatistics();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void filterResources() {
-        String typeFilter = filterTypeComboBox.getValue();
-        String statusFilter = filterStatusComboBox.getValue();
-        String searchText = searchField.getText() != null ? searchField.getText().toLowerCase() : "";
-
-        ObservableList<Equipment> filteredEquipment = allEquipment.filtered(eq -> {
-            boolean typeMatch = typeFilter == null || typeFilter.equals("Все") || typeFilter.equals("Техника");
-            boolean statusMatch = statusFilter == null || statusFilter.equals("Все") ||
-                    (statusFilter.equals("Свободен") == (eq.getAssignedFlight() == null));
-            boolean searchMatch = searchText.isEmpty() || eq.getModelName().toLowerCase().contains(searchText);
-            return typeMatch && statusMatch && searchMatch;
-        });
-
-        ObservableList<Brigade> filteredBrigades = allBrigades.filtered(br -> {
-            boolean typeMatch = typeFilter == null || typeFilter.equals("Все") || typeFilter.equals("Бригады");
-            boolean statusMatch = statusFilter == null || statusFilter.equals("Все") ||
-                    (statusFilter.equals("Свободен") == (br.getAssignedFlight() == null));
-            boolean searchMatch = searchText.isEmpty() || br.getSpecialization().toLowerCase().contains(searchText);
-            return typeMatch && statusMatch && searchMatch;
-        });
-
-        equipmentTable.setItems(filteredEquipment);
-        brigadeTable.setItems(filteredBrigades);
-    }
-
     private void updateStatistics() {
         int total = allEquipment.size() + allBrigades.size();
-        int free = (int)(allEquipment.stream().filter(eq -> eq.getAssignedFlight() == null).count() +
+        int free = (int) (allEquipment.stream().filter(eq -> eq.getAssignedFlight() == null).count() +
                 allBrigades.stream().filter(br -> br.getAssignedFlight() == null).count());
         int busy = total - free;
 
@@ -266,11 +269,8 @@ public class ResourcesController implements Initializable {
         alert.getButtonTypes().setAll(equipmentType, brigadeType, cancelType);
 
         alert.showAndWait().ifPresent(type -> {
-            if (type == equipmentType) {
-                showEquipmentForm();
-            } else if (type == brigadeType) {
-                showBrigadeForm();
-            }
+            if (type == equipmentType) showEquipmentForm();
+            else if (type == brigadeType) showBrigadeForm();
         });
     }
 

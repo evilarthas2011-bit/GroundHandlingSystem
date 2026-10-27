@@ -14,28 +14,19 @@ public class ResourceAllocationService {
     }
 
     public void autoAllocate(Flight flight) {
-        System.out.println("Начало автоматического распределения для рейса " + flight.getFlightNumber());
-
         List<Equipment> availableEquipment = resourceRepository.findAvailableEquipment();
         List<Brigade> availableBrigades = resourceRepository.findAvailableBrigades();
 
         if (!availableEquipment.isEmpty()) {
             Equipment equipment = availableEquipment.get(0);
-            equipment.assignToFlight(flight);
+            equipment.setAssignedFlight(flight);
             resourceRepository.update(equipment);
-            System.out.println("Назначена техника: " + equipment.getModelName());
-        } else {
-
-            System.out.println("Не найдено свободной техники!");
         }
+
         if (!availableBrigades.isEmpty()) {
             Brigade brigade = availableBrigades.get(0);
-            brigade.assignToFlight(flight);
+            brigade.setAssignedFlight(flight);
             resourceRepository.update(brigade);
-            System.out.println("Назначена бригада: " + brigade.getSpecialization());
-        } else {
-            System.out.println("Не найдено свободной бригады !");
         }
-        System.out.println("Распределение завершено");
     }
 }

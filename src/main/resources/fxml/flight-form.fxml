@@ -1,51 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.kuleshov.groundhandling.controller.FlightFormController"
-      spacing="15"
-      prefWidth="450.0" prefHeight="400.0"
+      spacing="15" prefWidth="450.0" prefHeight="450.0"
       style="-fx-background-color: #ffffff; -fx-padding: 25;">
 
     <Label text="Создание нового рейса" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-
     <Separator/>
 
     <VBox spacing="5">
-        <Label text="Номер рейса:" style="-fx-font-weight: bold; -fx-text-fill: #34495e;"/>
-        <TextField fx:id="flightNumberField" promptText="Например: SU-1234"
-                   style="-fx-padding: 8; -fx-font-size: 14px;"/>
+        <Label text="Номер рейса:" style="-fx-font-weight: bold;"/>
+        <TextField fx:id="flightNumberField" promptText="Например: SU-1234" style="-fx-padding: 8;"/>
     </VBox>
 
     <VBox spacing="5">
-        <Label text="Тип воздушного судна:" style="-fx-font-weight: bold; -fx-text-fill: #34495e;"/>
-        <ComboBox fx:id="aircraftTypeComboBox" prefWidth="300.0"
-                  style="-fx-padding: 5; -fx-font-size: 14px;"/>
+        <Label text="Бортовой номер ВС:" style="-fx-font-weight: bold;"/>
+        <TextField fx:id="tailNumberField" promptText="Например: RA-12345" style="-fx-padding: 8;"/>
     </VBox>
 
     <VBox spacing="5">
-        <Label text="Статус рейса:" style="-fx-font-weight: bold; -fx-text-fill: #34495e;"/>
-        <ComboBox fx:id="statusComboBox" prefWidth="300.0"
-                  style="-fx-padding: 5; -fx-font-size: 14px;"/>
+        <Label text="Тип воздушного судна:" style="-fx-font-weight: bold;"/>
+        <ComboBox fx:id="aircraftTypeComboBox" prefWidth="300.0" style="-fx-padding: 5;"/>
     </VBox>
 
     <VBox spacing="5">
-        <Label text="Дата и время:" style="-fx-font-weight: bold; -fx-text-fill: #34495e;"/>
-        <DatePicker fx:id="datePicker" prefWidth="300.0"
-                    style="-fx-padding: 5; -fx-font-size: 14px;"/>
+        <Label text="Статус рейса:" style="-fx-font-weight: bold;"/>
+        <ComboBox fx:id="statusComboBox" prefWidth="300.0" style="-fx-padding: 5;"/>
+    </VBox>
+
+    <VBox spacing="5">
+        <Label text="Дата и время:" style="-fx-font-weight: bold;"/>
+        <DatePicker fx:id="datePicker" prefWidth="300.0" style="-fx-padding: 5;"/>
     </VBox>
 
     <Label fx:id="errorLabel" text="" style="-fx-text-fill: #e74c3c; -fx-font-size: 12px;"/>
-
     <Region VBox.vgrow="ALWAYS"/>
 
     <HBox spacing="10" alignment="CENTER_RIGHT">
-        <Button text="Отмена" fx:id="cancelButton" onAction="#handleCancel"
-                style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-background-radius: 5; -fx-cursor: hand;"/>
-        <Button text="Создать рейс" fx:id="createButton" onAction="#handleCreate"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-background-radius: 5; -fx-cursor: hand;"/>
+        <Button text="Отмена" fx:id="cancelButton" onAction="#handleCancel" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;"/>
+        <Button text="Создать рейс" fx:id="createButton" onAction="#handleCreate" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;"/>
     </HBox>
 </VBox>

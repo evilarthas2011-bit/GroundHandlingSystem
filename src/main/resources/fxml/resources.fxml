@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
@@ -15,37 +14,16 @@
         <Label text="Управление ресурсами перрона" styleClass="page-title"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button text="➕ Добавить ресурс" fx:id="addResourceButton" onAction="#handleAddResource"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 13px; -fx-background-radius: 5; -fx-cursor: hand;"/>
-        <Button text=" Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
+                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-background-radius: 5;"/>
+        <Button text="🔄 Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
     </HBox>
 
     <HBox spacing="15" styleClass="stats-container">
-        <VBox styleClass="stat-card">
-            <Label text="Всего ресурсов" styleClass="stat-label"/>
-            <Label fx:id="totalResourcesLabel" text="0" styleClass="stat-value"/>
-        </VBox>
-        <VBox styleClass="stat-card">
-            <Label text="Техника" styleClass="stat-label"/>
-            <Label fx:id="equipmentCountLabel" text="0" styleClass="stat-value"/>
-        </VBox>
-        <VBox styleClass="stat-card">
-            <Label text="Бригады" styleClass="stat-label"/>
-            <Label fx:id="brigadeCountLabel" text="0" styleClass="stat-value"/>
-        </VBox>
-        <VBox styleClass="stat-card">
-            <Label text="Свободно" styleClass="stat-label"/>
-            <Label fx:id="freeResourcesLabel" text="0" styleClass="stat-value"/>
-        </VBox>
-        <VBox styleClass="stat-card">
-            <Label text="Занято" styleClass="stat-label"/>
-            <Label fx:id="busyResourcesLabel" text="0" styleClass="stat-value"/>
-        </VBox>
-    </HBox>
-
-    <HBox spacing="10">
-        <ComboBox fx:id="filterTypeComboBox" promptText="Все типы" prefWidth="150.0"/>
-        <ComboBox fx:id="filterStatusComboBox" promptText="Все статусы" prefWidth="150.0"/>
-        <TextField fx:id="searchField" promptText=" Поиск..." HBox.hgrow="ALWAYS"/>
+        <VBox styleClass="stat-card"><Label text="Всего ресурсов" styleClass="stat-label"/><Label fx:id="totalResourcesLabel" text="0" styleClass="stat-value"/></VBox>
+        <VBox styleClass="stat-card"><Label text="Техника" styleClass="stat-label"/><Label fx:id="equipmentCountLabel" text="0" styleClass="stat-value"/></VBox>
+        <VBox styleClass="stat-card"><Label text="Бригады" styleClass="stat-label"/><Label fx:id="brigadeCountLabel" text="0" styleClass="stat-value"/></VBox>
+        <VBox styleClass="stat-card"><Label text="Свободно" styleClass="stat-label"/><Label fx:id="freeResourcesLabel" text="0" styleClass="stat-value"/></VBox>
+        <VBox styleClass="stat-card"><Label text="Занято" styleClass="stat-label"/><Label fx:id="busyResourcesLabel" text="0" styleClass="stat-value"/></VBox>
     </HBox>
 
     <TabPane VBox.vgrow="ALWAYS">

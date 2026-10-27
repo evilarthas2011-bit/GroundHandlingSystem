@@ -2,35 +2,29 @@ package com.kuleshov.groundhandling.domain;
 
 import jakarta.persistence.*;
 
-/**
- * Класс, представляющий грузовую бригаду.
- * Наследуется от Resource.
- */
 @Entity
 @DiscriminatorValue("BRIGADE")
 public class Brigade extends Resource {
 
-    @Column(name = "team_size")
-    private Integer teamSize;
+    @Column(name = "size")
+    private Integer size;
 
     @Column(name = "specialization")
     private String specialization;
 
-    public Brigade() {
-    }
+    public Brigade() {}
 
-    public Brigade(Integer teamSize, String specialization) {
-        this.teamSize = teamSize;
+    public Brigade(Integer size, String specialization) {
+        this.size = size;
         this.specialization = specialization;
     }
 
-
-    public Integer getTeamSize() {
-        return teamSize;
+    public Integer getSize() {
+        return size;
     }
 
-    public void setTeamSize(Integer teamSize) {
-        this.teamSize = teamSize;
+    public void setSize(Integer size) {
+        this.size = size;
     }
 
     public String getSpecialization() {
@@ -43,10 +37,6 @@ public class Brigade extends Resource {
 
     @Override
     public String toString() {
-        return "Brigade{" +
-                "teamSize=" + teamSize +
-                ", specialization='" + specialization + '\'' +
-                ", isAvailable=" + getIsAvailable() +
-                '}';
+        return specialization;
     }
 }
