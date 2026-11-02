@@ -23,6 +23,15 @@ public class FlightManagementServiceImpl implements FlightManagementService {
     }
 
     @Override
+    public OperationResult updateFlightStatus(Long flightId, FlightStatus status) {
+        Flight flight = flightRepository.findByIdWithDetails(flightId);
+        if (flight == null) return OperationResult.error("Рейс не найден");
+        flight.setStatus(status);
+        flightRepository.save(flight);
+        return OperationResult.success("Статус обновлён");
+    }
+
+    @Override
     public OperationResult addCargoToFlight(Long flightId, Long compartmentId, double weight) {
         Flight flight = flightRepository.findByIdWithDetails(flightId);
         if (flight == null) return OperationResult.error("Рейс не найден");
@@ -36,13 +45,8 @@ public class FlightManagementServiceImpl implements FlightManagementService {
         Cargo cargo = new Cargo(weight, "Груз", targetCompartment, flight);
 
         if (weightBalanceService.validateAndAddCargo(flight, cargo)) {
-            try {
-                aircraftRepository.update(flight.getAircraft());
-                flightRepository.update(flight);
-                return OperationResult.success("Добавлено " + weight + " кг в отсек '" + targetCompartment.getName() + "'");
-            } catch (Exception e) {
-                return OperationResult.error("Ошибка сохранения в БД: " + e.getMessage());
-            }
+            flightRepository.save(flight);
+            return OperationResult.success("Добавлено " + weight + " кг в отсек '" + targetCompartment.getName() + "'");
         }
         return OperationResult.error("Превышен лимит веса отсека или самолета!");
     }
@@ -59,13 +63,8 @@ public class FlightManagementServiceImpl implements FlightManagementService {
         if (targetCompartment == null) return OperationResult.error("Отсек не найден");
 
         if (weightBalanceService.unloadLastCargo(flight, targetCompartment)) {
-            try {
-                aircraftRepository.update(flight.getAircraft());
-                flightRepository.update(flight);
-                return OperationResult.success("Груз из отсека '" + targetCompartment.getName() + "' разгружен");
-            } catch (Exception e) {
-                return OperationResult.error("Ошибка сохранения в БД: " + e.getMessage());
-            }
+            flightRepository.save(flight);
+            return OperationResult.success("Груз из отсека '" + targetCompartment.getName() + "' разгружен");
         }
         return OperationResult.error("Отсек пуст!");
     }
@@ -75,33 +74,27 @@ public class FlightManagementServiceImpl implements FlightManagementService {
         Flight flight = flightRepository.findByIdWithDetails(flightId);
         if (flight == null) return OperationResult.error("Рейс не найден");
 
-        try {
-            List<Resource> old = resourceRepository.findByAssignedFlight(flight);
-            for (Resource r : old) {
-                r.setAssignedFlight(null);
-                resourceRepository.update(r);
-            }
-
-            if (equipmentId != null) {
-                Equipment eq = (Equipment) resourceRepository.findById(equipmentId);
-                if (eq != null) {
-                    eq.setAssignedFlight(flight);
-                    resourceRepository.update(eq);
-                }
-            }
-            if (brigadeId != null) {
-                Brigade br = (Brigade) resourceRepository.findById(brigadeId);
-                if (br != null) {
-                    br.setAssignedFlight(flight);
-                    resourceRepository.update(br);
-                }
-            }
-
-            flightRepository.update(flight);
-            return OperationResult.success("Ресурсы успешно обновлены");
-        } catch (Exception e) {
-            return OperationResult.error("Ошибка назначения ресурсов: " + e.getMessage());
+        List<Resource> old = resourceRepository.findByAssignedFlight(flight);
+        for (Resource r : old) {
+            r.setAssignedFlight(null);
+            resourceRepository.save(r);
         }
+
+        if (equipmentId != null) {
+            Resource eq = resourceRepository.findById(equipmentId);
+            if (eq != null) {
+                eq.setAssignedFlight(flight);
+                resourceRepository.save(eq);
+            }
+        }
+        if (brigadeId != null) {
+            Resource br = resourceRepository.findById(brigadeId);
+            if (br != null) {
+                br.setAssignedFlight(flight);
+                resourceRepository.save(br);
+            }
+        }
+        return OperationResult.success("Ресурсы успешно обновлены");
     }
 
     @Override
@@ -109,16 +102,19 @@ public class FlightManagementServiceImpl implements FlightManagementService {
         Flight flight = flightRepository.findByIdWithDetails(flightId);
         if (flight == null) return OperationResult.error("Рейс не найден");
 
-        try {
-            flightRepository.delete(flight);
-            return OperationResult.success("Рейс удален");
-        } catch (Exception e) {
-            return OperationResult.error("Ошибка удаления рейса: " + e.getMessage());
+        List<Resource> assigned = resourceRepository.findByAssignedFlight(flight);
+        for (Resource r : assigned) {
+            r.setAssignedFlight(null);
+            resourceRepository.save(r);
         }
+
+        flightRepository.delete(flight);
+        return OperationResult.success("Рейс удален");
     }
 
     @Override
     public List<Resource> getAssignedResources(Flight flight) {
-        return flightRepository.findAssignedResources(flight);
+        if (flight == null) return List.of();
+        return resourceRepository.findByAssignedFlight(flight);
     }
 }

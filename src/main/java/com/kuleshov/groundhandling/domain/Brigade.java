@@ -6,37 +6,14 @@ import jakarta.persistence.*;
 @DiscriminatorValue("BRIGADE")
 public class Brigade extends Resource {
 
-    @Column(name = "size")
-    private Integer size;
-
     @Column(name = "specialization")
     private String specialization;
 
-    public Brigade() {}
+    @Column(name = "size")
+    private Integer size;
 
-    public Brigade(Integer size, String specialization) {
-        this.size = size;
-        this.specialization = specialization;
-    }
-
-    public Integer getSize() {
-        return size;
-    }
-
-    public void setSize(Integer size) {
-        this.size = size;
-    }
-
-    public String getSpecialization() {
-        return specialization;
-    }
-
-    public void setSpecialization(String specialization) {
-        this.specialization = specialization;
-    }
-
-    @Override
-    public String toString() {
-        return specialization;
-    }
+    public String getSpecialization() { return specialization; }
+    public void setSpecialization(String specialization) { this.specialization = specialization; }
+    public Integer getSize() { return size; }
+    public void setSize(Integer size) { this.size = size; }
 }

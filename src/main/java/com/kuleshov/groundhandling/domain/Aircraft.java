@@ -13,10 +13,10 @@ public class Aircraft {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type")
+    @Column(name = "type", nullable = false)
     private AircraftType type;
 
-    @Column(name = "tail_number", unique = true)
+    @Column(name = "tail_number", unique = true, nullable = false)
     private String tailNumber;
 
     @OneToMany(mappedBy = "aircraft", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -39,8 +39,13 @@ public class Aircraft {
         compartment.setAircraft(this);
     }
 
+    public void removeCompartment(Compartment compartment) {
+        compartments.remove(compartment);
+        compartment.setAircraft(null);
+    }
+
     public double getMaxPayload() {
-        return type != null ? type.getMaxPayload() : 0;
+        return type != null ? type.getMaxPayload() : 0.0;
     }
 
     public Long getId() { return id; }
@@ -51,4 +56,17 @@ public class Aircraft {
     public void setTailNumber(String tailNumber) { this.tailNumber = tailNumber; }
     public List<Compartment> getCompartments() { return compartments; }
     public void setCompartments(List<Compartment> compartments) { this.compartments = compartments; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Aircraft aircraft = (Aircraft) o;
+        return id != null && id.equals(aircraft.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

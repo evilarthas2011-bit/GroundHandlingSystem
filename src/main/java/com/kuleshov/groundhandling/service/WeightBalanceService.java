@@ -3,21 +3,32 @@ package com.kuleshov.groundhandling.service;
 import com.kuleshov.groundhandling.domain.Cargo;
 import com.kuleshov.groundhandling.domain.Compartment;
 import com.kuleshov.groundhandling.domain.Flight;
-
 import java.util.List;
 
 public class WeightBalanceService {
 
     public boolean validateAndAddCargo(Flight flight, Cargo cargo) {
         Compartment compartment = cargo.getCompartment();
-        double newCompartmentWeight = compartment.getCurrentWeight() + cargo.getWeight();
-        double newTotalWeight = (flight.getTotalCargoWeight() != null ? flight.getTotalCargoWeight() : 0) + cargo.getWeight();
 
-        if (newCompartmentWeight > compartment.getMaxWeight()) return false;
-        if (newTotalWeight > flight.getAircraft().getMaxPayload()) return false;
+        // 1. Проверка лимита конкретного отсека
+        double newCompartmentWeight = compartment.getCurrentWeight() + cargo.getWeight();
+        if (newCompartmentWeight > compartment.getMaxWeight()) {
+            return false;
+        }
+
+        // 2. Проверка ОБЩЕЙ грузоподъемности (Текущий груз + Пассажиры + Новый груз)
+        double currentCargoWeight = flight.getTotalCargoWeight() != null ? flight.getTotalCargoWeight() : 0.0;
+        double currentPassengerWeight = flight.getPassengerWeight() != null ? flight.getPassengerWeight() : 0.0;
+        double maxPayload = flight.getAircraft().getMaxPayload();
+
+        double newTotalWeight = currentCargoWeight + currentPassengerWeight + cargo.getWeight();
+
+        if (newTotalWeight > maxPayload) {
+            return false;
+        }
 
         compartment.setCurrentWeight(newCompartmentWeight);
-        flight.setTotalCargoWeight(newTotalWeight);
+        flight.setTotalCargoWeight(currentCargoWeight + cargo.getWeight());
         flight.getCargoList().add(cargo);
         return true;
     }

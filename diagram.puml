@@ -1,0 +1,246 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "domain" {
+    class Flight {
+        -id: Long
+        -flightNumber: String
+        -aircraftType: AircraftType
+        -scheduledTime: LocalDateTime
+        -status: FlightStatus
+        -aircraft: Aircraft
+        -totalCargoWeight: Double
+        -cargoList: List<Cargo>
+        +getFlightNumber(): String
+        +getStatus(): FlightStatus
+        +getAircraft(): Aircraft
+        +getCargoList(): List<Cargo>
+    }
+
+    class Aircraft {
+        -id: Long
+        -type: AircraftType
+        -tailNumber: String
+        -compartments: List<Compartment>
+        +getMaxPayload(): double
+        +addCompartment(c: Compartment): void
+    }
+
+    enum AircraftType {
+        BOEING_737
+        AIRBUS_A320
+        BOEING_777
+        AIRBUS_A350
+        +getDisplayName(): String
+        +getMaxPayload(): double
+    }
+
+    enum FlightStatus {
+        SCHEDULED
+        ARRIVED
+        LOADING
+        BOARDING
+        READY
+        DEPARTED
+        DELAYED
+    }
+
+    class Compartment {
+        -id: Long
+        -name: String
+        -maxWeight: Double
+        -currentWeight: Double
+        -aircraft: Aircraft
+        +getName(): String
+        +getMaxWeight(): Double
+        +getCurrentWeight(): Double
+    }
+
+    class Cargo {
+        -id: Long
+        -weight: Double
+        -description: String
+        -compartment: Compartment
+        -flight: Flight
+        +getWeight(): Double
+        +getDescription(): String
+    }
+
+    abstract class Resource {
+        -id: Long
+        -assignedFlight: Flight
+        +getId(): Long
+        +getAssignedFlight(): Flight
+    }
+
+    class Equipment {
+        -modelName: String
+        -loadCapacity: Double
+        +getModelName(): String
+        +getLoadCapacity(): Double
+    }
+
+    class Brigade {
+        -size: Integer
+        -specialization: String
+        +getSize(): Integer
+        +getSpecialization(): String
+    }
+
+    Flight "1" --> "1" Aircraft : aircraft >
+    Flight "1" *-- "*" Cargo : cargoList >
+    Aircraft "1" *-- "*" Compartment : compartments >
+    Cargo "*" --> "1" Compartment : compartment >
+    Cargo "*" --> "1" Flight : flight >
+    Compartment "*" --> "1" Aircraft : aircraft >
+    Resource <|-- Equipment
+    Resource <|-- Brigade
+    Resource "*" --> "0..1" Flight : assignedFlight >
+}
+
+package "repository" {
+    class FlightRepository {
+        +save(flight: Flight): Flight
+        +update(flight: Flight): Flight
+        +delete(flight: Flight): void
+        +findAll(): List<Flight>
+        +findByIdWithDetails(id: Long): Flight
+        +findAssignedResources(flight: Flight): List<Resource>
+    }
+
+    class ResourceRepository {
+        +save(resource: Resource): Resource
+        +update(resource: Resource): Resource
+        +delete(resource: Resource): void
+        +findAll(): List<Resource>
+        +findAvailableEquipment(): List<Equipment>
+        +findAvailableBrigades(): List<Brigade>
+        +findByAssignedFlight(flight: Flight): List<Resource>
+    }
+
+    class AircraftRepository {
+        +save(aircraft: Aircraft): Aircraft
+        +update(aircraft: Aircraft): Aircraft
+        +findByType(type: AircraftType): List<Aircraft>
+    }
+
+    class HibernateUtil {
+        -sessionFactory: SessionFactory
+        +getSessionFactory(): SessionFactory
+    }
+
+    FlightRepository ..> HibernateUtil : uses
+    ResourceRepository ..> HibernateUtil : uses
+    AircraftRepository ..> HibernateUtil : uses
+}
+
+package "service" {
+    interface FlightManagementService {
+        +addCargoToFlight(flightId, compartmentId, weight): OperationResult
+        +unloadLastCargoFromFlight(flightId, compartmentId): OperationResult
+        +assignResources(flightId, equipmentId, brigadeId): OperationResult
+        +deleteFlight(flightId): OperationResult
+        +getAssignedResources(flight: Flight): List<Resource>
+    }
+
+    class FlightManagementServiceImpl {
+        -flightRepository: FlightRepository
+        -resourceRepository: ResourceRepository
+        -aircraftRepository: AircraftRepository
+        -weightBalanceService: WeightBalanceService
+    }
+
+    interface ResourceManagementService {
+        +freeResource(resourceId: Long): OperationResult
+        +deleteResource(resourceId: Long): OperationResult
+    }
+
+    class ResourceManagementServiceImpl {
+        -resourceRepository: ResourceRepository
+    }
+
+    class WeightBalanceService {
+        +validateAndAddCargo(flight: Flight, cargo: Cargo): boolean
+        +unloadLastCargo(flight: Flight, compartment: Compartment): boolean
+    }
+
+    class ResourceAllocationService {
+        -resourceRepository: ResourceRepository
+        +autoAllocate(flight: Flight): void
+    }
+
+    class OperationResult {
+        -success: boolean
+        -message: String
+        +isSuccess(): boolean
+        +getMessage(): String
+        +{static} success(message: String): OperationResult
+        +{static} error(message: String): OperationResult
+    }
+
+    FlightManagementService <|.. FlightManagementServiceImpl
+    ResourceManagementService <|.. ResourceManagementServiceImpl
+    FlightManagementServiceImpl --> FlightRepository
+    FlightManagementServiceImpl --> ResourceRepository
+    FlightManagementServiceImpl --> AircraftRepository
+    FlightManagementServiceImpl --> WeightBalanceService
+    ResourceManagementServiceImpl --> ResourceRepository
+    ResourceAllocationService --> ResourceRepository
+}
+
+package "controller" {
+    class MainApp {
+        -primaryStage: Stage
+        +start(stage: Stage): void
+        +{static} getPrimaryStage(): Stage
+        +{static} main(args: String[]): void
+    }
+
+    class DashboardController {
+        -flightRepository: FlightRepository
+        -resourceRepository: ResourceRepository
+        -weightBalanceService: WeightBalanceService
+        -allocationService: ResourceAllocationService
+        -aircraftRepository: AircraftRepository
+        -flightManagementService: FlightManagementService
+        -selectedFlight: Flight
+        -autoRefreshTimeline: Timeline
+        +initialize(): void
+        +handleAddCargo(): void
+        +handleUnloadCargo(): void
+        +handleSave(): void
+        +handleAutoAllocate(): void
+        +handleDelete(): void
+        +handleNewFlight(): void
+        +handleRefresh(): void
+    }
+
+    class ResourcesController {
+        -resourceRepository: ResourceRepository
+        -resourceManagementService: ResourceManagementService
+        -allEquipment: ObservableList<Equipment>
+        -allBrigades: ObservableList<Brigade>
+        +initialize(): void
+        +handleAddResource(): void
+        +handleRefresh(): void
+    }
+
+    class FlightFormController {
+        -flightRepository: FlightRepository
+        -aircraftRepository: AircraftRepository
+        -onFlightCreated: Runnable
+        +initialize(): void
+        +handleCreate(): void
+        +handleCancel(): void
+    }
+
+    MainApp --> DashboardController
+    DashboardController --> FlightManagementService
+    DashboardController --> ResourceAllocationService
+    ResourcesController --> ResourceManagementService
+    FlightFormController --> FlightRepository
+    FlightFormController --> AircraftRepository
+}
+@enduml

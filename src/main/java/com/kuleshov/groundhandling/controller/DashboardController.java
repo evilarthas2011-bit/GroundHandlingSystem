@@ -8,11 +8,13 @@ import com.kuleshov.groundhandling.repository.ResourceRepository;
 import com.kuleshov.groundhandling.service.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -49,18 +51,35 @@ public class DashboardController implements Initializable {
     @FXML private TableColumn<Flight, String> brigadeColumn;
     @FXML private TableColumn<Flight, Void> actionsColumn;
 
-    @FXML private Label totalFlightsLabel, activeFlightsLabel, completedFlightsLabel;
+    @FXML private Label totalFlightsLabel;
+    @FXML private Label activeFlightsLabel;
+    @FXML private Label completedFlightsLabel;
+
     @FXML private VBox detailsPanel;
-    @FXML private Label detailFlightNumber, detailTailNumber, detailAircraftType, detailTotalWeight;
+    @FXML private Label detailFlightNumber;
+    @FXML private Label detailTailNumber;
+    @FXML private Label detailAircraftType;
+    @FXML private Label detailTotalWeight;
+
     @FXML private ComboBox<FlightStatus> statusComboBox;
     @FXML private ComboBox<Compartment> compartmentComboBox;
     @FXML private TextField cargoWeightField;
     @FXML private VBox compartmentsContainer;
+
     @FXML private ComboBox<Equipment> equipmentComboBox;
     @FXML private ComboBox<Brigade> brigadeComboBox;
 
-    @FXML private Button refreshButton, newFlightButton, closeDetailsButton;
-    @FXML private Button autoAllocateButton, addCargoButton, unloadCargoButton, saveButton, deleteButton;
+    @FXML private TextField passengerWeightField;
+
+    @FXML private Button refreshButton;
+    @FXML private Button newFlightButton;
+    @FXML private Button closeDetailsButton;
+    @FXML private Button autoAllocateButton;
+    @FXML private Button addCargoButton;
+    @FXML private Button unloadCargoButton;
+    @FXML private Button saveButton;
+    @FXML private Button deleteButton;
+
     @FXML private TextArea logArea;
 
     private FlightRepository flightRepository;
@@ -89,6 +108,7 @@ public class DashboardController implements Initializable {
         setupCompartmentComboBox();
         setupEquipmentComboBoxDisplay();
         setupBrigadeComboBoxDisplay();
+
         loadFlights();
 
         btnFlights.setOnAction(e -> switchToFlights());
@@ -100,7 +120,9 @@ public class DashboardController implements Initializable {
 
     private void startAutoRefresh() {
         autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_INTERVAL_SECONDS), e -> {
-            if (selectedFlight == null) loadFlights();
+            if (selectedFlight == null) {
+                loadFlights();
+            }
         }));
         autoRefreshTimeline.setCycleCount(Timeline.INDEFINITE);
         autoRefreshTimeline.play();
@@ -109,29 +131,43 @@ public class DashboardController implements Initializable {
     private void setupStatusComboBox() {
         statusComboBox.setItems(FXCollections.observableArrayList(FlightStatus.values()));
         statusComboBox.setOnAction(e -> {
-            if (selectedFlight != null) selectedFlight.setStatus(statusComboBox.getValue());
+            if (selectedFlight != null && statusComboBox.getValue() != null) {
+                FlightStatus newStatus = statusComboBox.getValue();
+                OperationResult result = flightManagementService.updateFlightStatus(
+                        selectedFlight.getId(), newStatus);
+                if (result.isSuccess()) {
+                    selectedFlight.setStatus(newStatus);
+                    log("Статус рейса " + selectedFlight.getFlightNumber() + " изменён на " + newStatus);
+                    loadFlights();
+                } else {
+                    showWarning("Ошибка", result.getMessage());
+                    statusComboBox.setValue(selectedFlight.getStatus());
+                }
+            }
         });
     }
 
     private void setupCompartmentComboBox() {
-        compartmentComboBox.setCellFactory(param -> new ListCell<Compartment>() {
+        compartmentComboBox.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(Compartment item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) setText(null);
-                else {
+                if (empty || item == null) {
+                    setText(null);
+                } else {
                     double cur = item.getCurrentWeight() != null ? item.getCurrentWeight() : 0;
                     double max = item.getMaxWeight() != null ? item.getMaxWeight() : 0;
                     setText(String.format("%s (%.0f / %.0f кг)", item.getName(), cur, max));
                 }
             }
         });
-        compartmentComboBox.setButtonCell(new ListCell<Compartment>() {
+        compartmentComboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Compartment item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) setText(null);
-                else {
+                if (empty || item == null) {
+                    setText(null);
+                } else {
                     double cur = item.getCurrentWeight() != null ? item.getCurrentWeight() : 0;
                     double max = item.getMaxWeight() != null ? item.getMaxWeight() : 0;
                     setText(String.format("%s (%.0f / %.0f кг)", item.getName(), cur, max));
@@ -141,18 +177,19 @@ public class DashboardController implements Initializable {
     }
 
     private void setupEquipmentComboBoxDisplay() {
-        equipmentComboBox.setCellFactory(param -> new ListCell<Equipment>() {
+        equipmentComboBox.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(Equipment item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) setText(null);
-                else {
+                if (empty || item == null) {
+                    setText(null);
+                } else {
                     String status = item.getAssignedFlight() != null ? " (Занят)" : " (Свободен)";
                     setText(item.getModelName() + status);
                 }
             }
         });
-        equipmentComboBox.setButtonCell(new ListCell<Equipment>() {
+        equipmentComboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Equipment item, boolean empty) {
                 super.updateItem(item, empty);
@@ -162,18 +199,19 @@ public class DashboardController implements Initializable {
     }
 
     private void setupBrigadeComboBoxDisplay() {
-        brigadeComboBox.setCellFactory(param -> new ListCell<Brigade>() {
+        brigadeComboBox.setCellFactory(param -> new ListCell<>() {
             @Override
             protected void updateItem(Brigade item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) setText(null);
-                else {
+                if (empty || item == null) {
+                    setText(null);
+                } else {
                     String status = item.getAssignedFlight() != null ? " (Занята)" : " (Свободна)";
                     setText(item.getSpecialization() + status);
                 }
             }
         });
-        brigadeComboBox.setButtonCell(new ListCell<Brigade>() {
+        brigadeComboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(Brigade item, boolean empty) {
                 super.updateItem(item, empty);
@@ -183,19 +221,34 @@ public class DashboardController implements Initializable {
     }
 
     private void setupTableColumns() {
-        flightNumberColumn.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getFlightNumber()));
-        tailNumberColumn.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(
-                data.getValue().getAircraft() != null ? data.getValue().getAircraft().getTailNumber() : "—"));
-        aircraftTypeColumn.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getAircraftType().getDisplayName()));
-        statusColumn.setCellValueFactory(data -> new javafx.beans.property.SimpleStringProperty(data.getValue().getStatus().toString()));
+        flightNumberColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getFlightNumber()));
+
+        tailNumberColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        data.getValue().getAircraft() != null ? data.getValue().getAircraft().getTailNumber() : "—"));
+
+        aircraftTypeColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        data.getValue().getAircraftType() != null ? data.getValue().getAircraftType().getDisplayName() : "—"));
+
+        statusColumn.setCellValueFactory(data ->
+                new SimpleStringProperty(
+                        data.getValue().getStatus() != null ? data.getValue().getStatus().toString() : "—"));
 
         statusColumn.setCellFactory(col -> new TableCell<>() {
             private final Label badge = new Label();
-            { badge.getStyleClass().add("status-badge"); setGraphic(badge); setAlignment(javafx.geometry.Pos.CENTER); }
+            {
+                badge.getStyleClass().add("status-badge");
+                setAlignment(Pos.CENTER);
+            }
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) { setGraphic(null); return; }
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
                 Flight flight = getTableView().getItems().get(getIndex());
                 badge.setText(item);
                 badge.getStyleClass().removeIf(s -> s.startsWith("status-") && !s.equals("status-badge"));
@@ -204,34 +257,49 @@ public class DashboardController implements Initializable {
             }
         });
 
+        // ИЗМЕНЕНО: теперь колонка "Загрузка" учитывает вес груза + пассажиров
         weightColumn.setCellValueFactory(data -> {
             Flight f = data.getValue();
-            double cur = f.getTotalCargoWeight() != null ? f.getTotalCargoWeight() : 0;
+            double cargo = f.getTotalCargoWeight() != null ? f.getTotalCargoWeight() : 0;
+            double passenger = f.getPassengerWeight() != null ? f.getPassengerWeight() : 0;
+            double total = cargo + passenger;
             double max = f.getAircraft() != null ? f.getAircraft().getMaxPayload() : 0;
-            return new javafx.beans.property.SimpleStringProperty(String.format("%.0f / %.0f кг", cur, max));
+            return new SimpleStringProperty(String.format("%.0f / %.0f кг", total, max));
         });
 
         equipmentColumn.setCellValueFactory(data -> {
             try {
                 List<Resource> res = flightManagementService.getAssignedResources(data.getValue());
-                for (Resource r : res) if (r instanceof Equipment) return new javafx.beans.property.SimpleStringProperty(((Equipment) r).getModelName());
+                for (Resource r : res) {
+                    if (r instanceof Equipment) {
+                        return new SimpleStringProperty(((Equipment) r).getModelName());
+                    }
+                }
             } catch (Exception ignored) {}
-            return new javafx.beans.property.SimpleStringProperty("—");
+            return new SimpleStringProperty("—");
         });
 
         brigadeColumn.setCellValueFactory(data -> {
             try {
                 List<Resource> res = flightManagementService.getAssignedResources(data.getValue());
-                for (Resource r : res) if (r instanceof Brigade) return new javafx.beans.property.SimpleStringProperty(((Brigade) r).getSpecialization());
+                for (Resource r : res) {
+                    if (r instanceof Brigade) {
+                        return new SimpleStringProperty(((Brigade) r).getSpecialization());
+                    }
+                }
             } catch (Exception ignored) {}
-            return new javafx.beans.property.SimpleStringProperty("—");
+            return new SimpleStringProperty("—");
         });
 
         actionsColumn.setCellFactory(col -> new TableCell<>() {
             private final Button viewButton = new Button("Детали");
-            { viewButton.setOnAction(event -> showFlightDetails(getTableView().getItems().get(getIndex()))); }
+            {
+                viewButton.setOnAction(event -> showFlightDetails(getTableView().getItems().get(getIndex())));
+            }
             @Override
-            protected void updateItem(Void item, boolean empty) { setGraphic(empty ? null : viewButton); }
+            protected void updateItem(Void item, boolean empty) {
+                setGraphic(empty ? null : viewButton);
+            }
         });
     }
 
@@ -257,21 +325,29 @@ public class DashboardController implements Initializable {
 
         detailFlightNumber.setText(selectedFlight.getFlightNumber());
         detailTailNumber.setText(selectedFlight.getAircraft() != null ? selectedFlight.getAircraft().getTailNumber() : "—");
-        detailAircraftType.setText(selectedFlight.getAircraftType().getDisplayName());
+        detailAircraftType.setText(selectedFlight.getAircraftType() != null ? selectedFlight.getAircraftType().getDisplayName() : "—");
         statusComboBox.setValue(selectedFlight.getStatus());
 
-        double totalWeight = selectedFlight.getTotalCargoWeight() != null ? selectedFlight.getTotalCargoWeight() : 0;
-        detailTotalWeight.setText(String.format("%.0f кг", totalWeight));
+        // Обновленный блок отображения веса с учетом пассажиров
+        double cargoWeight = selectedFlight.getTotalCargoWeight() != null ? selectedFlight.getTotalCargoWeight() : 0.0;
+        double passengerWeight = selectedFlight.getPassengerWeight() != null ? selectedFlight.getPassengerWeight() : 0.0;
+        double totalWeight = cargoWeight + passengerWeight;
+        double maxPayload = selectedFlight.getAircraft() != null ? selectedFlight.getAircraft().getMaxPayload() : 0.0;
+
+        detailTotalWeight.setText(String.format("Груз: %.0f кг | Пасс.: %.0f кг\nВсего: %.0f / %.0f кг",
+                cargoWeight, passengerWeight, totalWeight, maxPayload));
 
         compartmentsContainer.getChildren().clear();
         compartmentComboBox.getItems().clear();
 
-        if (selectedFlight.getAircraft() != null) {
+        if (selectedFlight.getAircraft() != null && selectedFlight.getAircraft().getCompartments() != null) {
             for (Compartment comp : selectedFlight.getAircraft().getCompartments()) {
                 compartmentComboBox.getItems().add(comp);
                 compartmentsContainer.getChildren().add(createCompartmentBox(comp));
             }
-            if (!compartmentComboBox.getItems().isEmpty()) compartmentComboBox.getSelectionModel().selectFirst();
+            if (!compartmentComboBox.getItems().isEmpty()) {
+                compartmentComboBox.getSelectionModel().selectFirst();
+            }
         }
 
         List<Equipment> allEquipment = resourceRepository.findAll().stream()
@@ -282,13 +358,20 @@ public class DashboardController implements Initializable {
                 .filter(r -> r instanceof Brigade).map(r -> (Brigade) r).toList();
         brigadeComboBox.setItems(FXCollections.observableArrayList(allBrigades));
 
-        setupEquipmentComboBoxDisplay();
-        setupBrigadeComboBoxDisplay();
-
         List<Resource> assigned = flightManagementService.getAssignedResources(selectedFlight);
         for (Resource r : assigned) {
-            if (r instanceof Equipment) equipmentComboBox.getSelectionModel().select((Equipment) r);
-            if (r instanceof Brigade) brigadeComboBox.getSelectionModel().select((Brigade) r);
+            if (r instanceof Equipment) {
+                equipmentComboBox.getSelectionModel().select((Equipment) r);
+            }
+            if (r instanceof Brigade) {
+                brigadeComboBox.getSelectionModel().select((Brigade) r);
+            }
+        }
+
+        if (selectedFlight.getPassengerWeight() != null) {
+            passengerWeightField.setText(String.valueOf(selectedFlight.getPassengerWeight().intValue()));
+        } else {
+            passengerWeightField.setText("0");
         }
 
         addCargoHistoryDisplay();
@@ -309,7 +392,7 @@ public class DashboardController implements Initializable {
                 Label cargoItem = new Label(String.format("- %.0f кг: %s (отсек: %s)",
                         cargo.getWeight(),
                         cargo.getDescription() != null ? cargo.getDescription() : "Груз",
-                        cargo.getCompartment().getName()));
+                        cargo.getCompartment() != null ? cargo.getCompartment().getName() : "Неизвестно"));
                 cargoItem.setStyle("-fx-padding: 2 0 2 10; -fx-text-fill: #555; -fx-font-size: 12px;");
                 compartmentsContainer.getChildren().add(cargoItem);
             }
@@ -328,9 +411,10 @@ public class DashboardController implements Initializable {
         Label weightLabel = new Label(String.format("Загрузка: %.0f / %.0f кг (%.0f%%)", cur, max, ratio * 100));
 
         ProgressBar progressBar = new ProgressBar();
-        progressBar.setProgress(ratio);
+        progressBar.setProgress(Math.min(ratio, 1.0));
         progressBar.setPrefWidth(250);
-        progressBar.setStyle("-fx-accent: " + (ratio > 0.9 ? "#e74c3c" : ratio > 0.7 ? "#f39c12" : "#27ae60") + ";");
+        String color = ratio > 0.9 ? "#e74c3c" : (ratio > 0.7 ? "#f39c12" : "#27ae60");
+        progressBar.setStyle("-fx-accent: " + color + ";");
 
         box.getChildren().addAll(nameLabel, weightLabel, progressBar);
         return box;
@@ -369,11 +453,9 @@ public class DashboardController implements Initializable {
         if (!validateCargoWeight()) return;
 
         double weight = DEFAULT_CARGO_WEIGHT;
-        if (cargoWeightField != null) {
-            String weightText = cargoWeightField.getText().trim();
-            if (!weightText.isEmpty()) {
-                weight = Double.parseDouble(weightText);
-            }
+        String weightText = cargoWeightField.getText().trim();
+        if (!weightText.isEmpty()) {
+            weight = Double.parseDouble(weightText);
         }
 
         OperationResult result = flightManagementService.addCargoToFlight(
@@ -449,10 +531,15 @@ public class DashboardController implements Initializable {
     private void handleAutoAllocate() {
         if (selectedFlight == null) return;
         try {
-            allocationService.autoAllocate(selectedFlight);
-            log("Авто-распределение выполнено");
-            loadFlights();
-            showFlightDetails(selectedFlight);
+            OperationResult result = allocationService.allocateResources(selectedFlight);
+            if (result.isSuccess()) {
+                log(result.getMessage());
+                loadFlights();
+                showFlightDetails(selectedFlight);
+            } else {
+                showWarning("Ошибка распределения", result.getMessage());
+                log("Ошибка: " + result.getMessage());
+            }
         } catch (Exception e) {
             log("Ошибка: " + e.getMessage());
             showError("Ошибка распределения", "Не удалось выполнить авто-распределение ресурсов.\n" + e.getMessage());
@@ -484,7 +571,10 @@ public class DashboardController implements Initializable {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/flight-form.fxml"));
             Parent root = loader.load();
             FlightFormController controller = loader.getController();
-            controller.setOnFlightCreated(() -> { loadFlights(); log("Новый рейс создан"); });
+            controller.setOnFlightCreated(() -> {
+                loadFlights();
+                log("Новый рейс создан");
+            });
             Stage stage = new Stage();
             stage.setTitle("Новый рейс");
             stage.setScene(new Scene(root));
@@ -498,7 +588,43 @@ public class DashboardController implements Initializable {
     }
 
     @FXML
-    private void handleRefresh() { log("Обновление данных..."); loadFlights(); }
+    private void handleRefresh() {
+        log("Обновление данных...");
+        loadFlights();
+    }
+
+    @FXML
+    private void handleUpdatePassengerWeight() {
+        if (selectedFlight == null) return;
+
+        try {
+            double weight = Double.parseDouble(passengerWeightField.getText().trim());
+            if (weight < 0) {
+                showWarning("Ошибка", "Вес не может быть отрицательным");
+                return;
+            }
+
+            double currentCargo = selectedFlight.getTotalCargoWeight() != null ? selectedFlight.getTotalCargoWeight() : 0.0;
+            double maxPayload = selectedFlight.getAircraft() != null ? selectedFlight.getAircraft().getMaxPayload() : 0.0;
+
+            if (currentCargo + weight > maxPayload) {
+                showWarning("Превышение лимита!",
+                        String.format("Общий вес (груз %.0f кг + пассажиры %.0f кг) превышает макс. грузоподъемность ВС (%.0f кг)!",
+                                currentCargo, weight, maxPayload));
+                return;
+            }
+
+            selectedFlight.setPassengerWeight(weight);
+            flightRepository.save(selectedFlight);
+
+            log("Установлен вес пассажиров: " + weight + " кг для рейса " + selectedFlight.getFlightNumber());
+            showFlightDetails(selectedFlight);
+            loadFlights();
+
+        } catch (NumberFormatException e) {
+            showWarning("Неверный формат", "Введите корректное числовое значение веса.");
+        }
+    }
 
     private void switchToFlights() {
         btnFlights.getStyleClass().add("active");
@@ -537,22 +663,28 @@ public class DashboardController implements Initializable {
 
     private void log(String msg) {
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        logArea.appendText("[" + time + "] " + msg + "\n");
+        Platform.runLater(() -> {
+            logArea.appendText("[" + time + "] " + msg + "\n");
+        });
     }
 
     private void showError(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(content);
+            alert.showAndWait();
+        });
     }
 
     private void showWarning(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(content);
+            alert.showAndWait();
+        });
     }
 }

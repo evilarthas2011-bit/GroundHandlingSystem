@@ -11,27 +11,21 @@ public class MainApp extends Application {
     private static Stage primaryStage;
 
     @Override
-    public void start(Stage stage) {
+    public void start(Stage stage) throws Exception {
         primaryStage = stage;
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
-            Parent root = loader.load();
-
-            Scene scene = new Scene(root, 1200, 700);
-
-            stage.setTitle("Ground Handling System - Панель управления");
-            stage.setScene(scene);
-            stage.show();
-
-            System.out.println("Приложение успешно запущено!");
-
-        } catch (Exception e) {
-            System.err.println("Ошибка запуска приложения: " + e.getMessage());
-            e.printStackTrace();
-        }
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/dashboard.fxml"));
+        Parent root = loader.load();
+        Scene scene = new Scene(root);
+        stage.setTitle("Ground Handling System – Панель управления");
+        stage.setScene(scene);
+        stage.show();
     }
 
-    public static Stage getPrimaryStage() { return primaryStage; }
+    public static Stage getPrimaryStage() {
+        return primaryStage;
+    }
 
-    public static void main(String[] args) { launch(args); }
+    public static void main(String[] args) {
+        launch(args);
+    }
 }

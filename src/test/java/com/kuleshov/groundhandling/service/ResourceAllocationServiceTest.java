@@ -4,68 +4,90 @@ import com.kuleshov.groundhandling.domain.*;
 import com.kuleshov.groundhandling.repository.ResourceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class ResourceAllocationServiceTest {
 
+    @Mock
     private ResourceRepository resourceRepository;
+
+    @InjectMocks
     private ResourceAllocationService allocationService;
+
     private Flight flight;
+    private Equipment equipment;
+    private Brigade brigade;
 
     @BeforeEach
     void setUp() {
-        resourceRepository = Mockito.mock(ResourceRepository.class);
-        allocationService = new ResourceAllocationService(resourceRepository);
+        flight = new Flight();
+        flight.setId(1L);
+        flight.setFlightNumber("SU-1234");
 
-        Aircraft aircraft = new Aircraft(AircraftType.BOEING_737, "RA-TEST");
-        flight = new Flight("TEST-001", AircraftType.BOEING_737, LocalDateTime.now());
-        flight.setAircraft(aircraft);
+        equipment = new Equipment();
+        equipment.setId(1L);
+        equipment.setModelName("Тягач T-100");
+
+        brigade = new Brigade();
+        brigade.setId(1L);
+        brigade.setSpecialization("Грузовая бригада №1");
     }
 
     @Test
-    void testAutoAllocate_WithAvailableResources() {
-        Equipment equipment = new Equipment("Тягач T-100", 5000.0);
-        Brigade brigade = new Brigade(6, "Погрузочная бригада");
+    void allocateResources_success_whenResourcesAvailable() {
+        List<Equipment> availableEquipment = new ArrayList<>();
+        availableEquipment.add(equipment);
 
-        when(resourceRepository.findAvailableEquipment()).thenReturn(Collections.singletonList(equipment));
-        when(resourceRepository.findAvailableBrigades()).thenReturn(Collections.singletonList(brigade));
+        List<Brigade> availableBrigades = new ArrayList<>();
+        availableBrigades.add(brigade);
 
-        allocationService.autoAllocate(flight);
+        when(resourceRepository.findAvailableEquipment()).thenReturn(availableEquipment);
+        when(resourceRepository.findAvailableBrigades()).thenReturn(availableBrigades);
 
-        assertEquals(flight, equipment.getAssignedFlight(), "Техника должна быть назначена на рейс");
-        assertEquals(flight, brigade.getAssignedFlight(), "Бригада должна быть назначена на рейс");
-        verify(resourceRepository, times(2)).update(any(Resource.class));
+        OperationResult result = allocationService.allocateResources(flight);
+
+        assertTrue(result.isSuccess());
+        assertEquals(flight, equipment.getAssignedFlight());
+        assertEquals(flight, brigade.getAssignedFlight());
+        verify(resourceRepository, times(1)).save(equipment);
+        verify(resourceRepository, times(1)).save(brigade);
     }
 
     @Test
-    void testAutoAllocate_NoAvailableEquipment() {
-        Equipment equipment = new Equipment("Тягач T-100", 5000.0);
-        Brigade brigade = new Brigade(6, "Погрузочная бригада");
-
+    void allocateResources_fail_whenNoEquipmentAvailable() {
         when(resourceRepository.findAvailableEquipment()).thenReturn(Collections.emptyList());
-        when(resourceRepository.findAvailableBrigades()).thenReturn(Collections.singletonList(brigade));
+        when(resourceRepository.findAvailableBrigades()).thenReturn(List.of(brigade));
 
-        allocationService.autoAllocate(flight);
+        OperationResult result = allocationService.allocateResources(flight);
 
-        assertNull(equipment.getAssignedFlight(), "Техника не должна быть назначена");
-        assertEquals(flight, brigade.getAssignedFlight(), "Бригада должна быть назначена");
-        verify(resourceRepository, times(1)).update(any(Resource.class));
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().contains("техники"));
+        verify(resourceRepository, never()).save(any(Resource.class));
     }
 
     @Test
-    void testAutoAllocate_NoAvailableResources() {
-        when(resourceRepository.findAvailableEquipment()).thenReturn(Collections.emptyList());
+    void allocateResources_fail_whenNoBrigadeAvailable() {
+        List<Equipment> availableEquipment = new ArrayList<>();
+        availableEquipment.add(equipment);
+
+        when(resourceRepository.findAvailableEquipment()).thenReturn(availableEquipment);
         when(resourceRepository.findAvailableBrigades()).thenReturn(Collections.emptyList());
 
-        allocationService.autoAllocate(flight);
+        OperationResult result = allocationService.allocateResources(flight);
 
-        verify(resourceRepository, never()).update(any(Resource.class));
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().contains("бригад"));
+        verify(resourceRepository, never()).save(any(Resource.class));
     }
 }

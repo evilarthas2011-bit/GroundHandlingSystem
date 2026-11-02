@@ -1,8 +1,7 @@
 package com.kuleshov.groundhandling.repository;
 
-import com.kuleshov.groundhandling.HibernateUtil;
 import com.kuleshov.groundhandling.domain.Aircraft;
-import com.kuleshov.groundhandling.domain.AircraftType;
+import com.kuleshov.groundhandling.HibernateUtil;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -10,29 +9,29 @@ import java.util.List;
 
 public class AircraftRepository {
 
-    public Aircraft save(Aircraft aircraft) {
+    public List<Aircraft> findAll() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Transaction tx = session.beginTransaction();
-            session.persist(aircraft);
-            tx.commit();
-            return aircraft;
+            return session.createQuery("FROM Aircraft", Aircraft.class).getResultList();
         }
     }
 
-    public Aircraft update(Aircraft aircraft) {
+    public void save(Aircraft aircraft) {
+        Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Transaction tx = session.beginTransaction();
-            session.merge(aircraft);
+            tx = session.beginTransaction();
+            if (aircraft.getId() == null) {
+                session.persist(aircraft);
+            } else {
+                session.merge(aircraft);
+            }
             tx.commit();
-            return aircraft;
+        } catch (Exception e) {
+            if (tx != null) tx.rollback();
+            throw e;
         }
     }
 
-    public List<Aircraft> findByType(AircraftType type) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
-                            "FROM Aircraft a WHERE a.type = :type", Aircraft.class)
-                    .setParameter("type", type).getResultList();
-        }
+    public void update(Aircraft aircraft) {
+        save(aircraft);
     }
 }
