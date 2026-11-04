@@ -257,7 +257,6 @@ public class DashboardController implements Initializable {
             }
         });
 
-        // ИЗМЕНЕНО: теперь колонка "Загрузка" учитывает вес груза + пассажиров
         weightColumn.setCellValueFactory(data -> {
             Flight f = data.getValue();
             double cargo = f.getTotalCargoWeight() != null ? f.getTotalCargoWeight() : 0;
