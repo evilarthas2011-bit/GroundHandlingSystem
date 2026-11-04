@@ -1,20 +1,12 @@
 package com.kuleshov.groundhandling.controller;
 
-import com.kuleshov.groundhandling.domain.Aircraft;
-import com.kuleshov.groundhandling.domain.AircraftType;
-import com.kuleshov.groundhandling.domain.Compartment;
-import com.kuleshov.groundhandling.domain.Flight;
-import com.kuleshov.groundhandling.domain.FlightStatus;
+import com.kuleshov.groundhandling.domain.*;
 import com.kuleshov.groundhandling.repository.AircraftRepository;
 import com.kuleshov.groundhandling.repository.FlightRepository;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 import java.net.URL;
@@ -24,29 +16,14 @@ import java.util.ResourceBundle;
 
 public class FlightFormController implements Initializable {
 
-    @FXML
-    private TextField flightNumberField;
-
-    @FXML
-    private TextField tailNumberField;
-
-    @FXML
-    private ComboBox<AircraftType> aircraftTypeComboBox;
-
-    @FXML
-    private ComboBox<FlightStatus> statusComboBox;
-
-    @FXML
-    private DatePicker datePicker;
-
-    @FXML
-    private Label errorLabel;
-
-    @FXML
-    private Button cancelButton;
-
-    @FXML
-    private Button createButton;
+    @FXML private TextField flightNumberField;
+    @FXML private TextField tailNumberField;
+    @FXML private ComboBox<AircraftType> aircraftTypeComboBox;
+    @FXML private ComboBox<FlightStatus> statusComboBox;
+    @FXML private DatePicker datePicker;
+    @FXML private Label errorLabel;
+    @FXML private Button cancelButton;
+    @FXML private Button createButton;
 
     private FlightRepository flightRepository;
     private AircraftRepository aircraftRepository;
@@ -119,8 +96,12 @@ public class FlightFormController implements Initializable {
             Stage stage = (Stage) createButton.getScene().getWindow();
             stage.close();
 
+        } catch (org.hibernate.exception.ConstraintViolationException e) {
+            errorLabel.setText("Бортовой номер '" + tailNumberField.getText().trim() +
+                    "' уже существует. Введите уникальный номер.");
         } catch (Exception e) {
             errorLabel.setText("Ошибка сохранения: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

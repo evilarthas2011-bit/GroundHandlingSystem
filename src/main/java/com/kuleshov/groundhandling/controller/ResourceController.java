@@ -2,8 +2,9 @@ package com.kuleshov.groundhandling.controller;
 
 import com.kuleshov.groundhandling.domain.*;
 import com.kuleshov.groundhandling.repository.ResourceRepository;
-import com.kuleshov.groundhandling.service.ResourceManagementService;
-import com.kuleshov.groundhandling.service.ResourceManagementServiceImpl;
+import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -45,14 +46,10 @@ public class ResourceController implements Initializable {
     @FXML private TextArea logArea;
 
     private ResourceRepository resourceRepository;
-    private ResourceManagementService resourceManagementService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         resourceRepository = new ResourceRepository();
-
-        // ИСПРАВЛЕНО: передается только 1 аргумент, так как flightRepository здесь не нужен
-        resourceManagementService = new ResourceManagementServiceImpl(resourceRepository);
 
         setupEquipmentTable();
         setupBrigadeTable();
@@ -63,18 +60,18 @@ public class ResourceController implements Initializable {
 
     private void setupEquipmentTable() {
         equipmentIdColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleObjectProperty<>(data.getValue().getId()));
+                new SimpleObjectProperty<>(data.getValue().getId()));
 
         equipmentModelColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty(data.getValue().getModelName()));
+                new SimpleStringProperty(data.getValue().getModelName()));
 
         equipmentStatusColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty(
+                new SimpleStringProperty(
                         data.getValue().getAssignedFlight() != null ? "Занят" : "Свободен"));
 
         equipmentFlightColumn.setCellValueFactory(data -> {
             Flight flight = data.getValue().getAssignedFlight();
-            return new javafx.beans.property.SimpleStringProperty(
+            return new SimpleStringProperty(
                     flight != null ? flight.getFlightNumber() : "—");
         });
 
@@ -109,21 +106,21 @@ public class ResourceController implements Initializable {
 
     private void setupBrigadeTable() {
         brigadeIdColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleObjectProperty<>(data.getValue().getId()));
+                new SimpleObjectProperty<>(data.getValue().getId()));
 
         brigadeSpecializationColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty(data.getValue().getSpecialization()));
+                new SimpleStringProperty(data.getValue().getSpecialization()));
 
         brigadeSizeColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleObjectProperty<>(data.getValue().getSize()));
+                new SimpleObjectProperty<>(data.getValue().getSize()));
 
         brigadeStatusColumn.setCellValueFactory(data ->
-                new javafx.beans.property.SimpleStringProperty(
+                new SimpleStringProperty(
                         data.getValue().getAssignedFlight() != null ? "Занята" : "Свободна"));
 
         brigadeFlightColumn.setCellValueFactory(data -> {
             Flight flight = data.getValue().getAssignedFlight();
-            return new javafx.beans.property.SimpleStringProperty(
+            return new SimpleStringProperty(
                     flight != null ? flight.getFlightNumber() : "—");
         });
 
@@ -189,6 +186,7 @@ public class ResourceController implements Initializable {
 
         try {
             Equipment equipment = new Equipment();
+            equipment.setName(model); // <-- ДОБАВЛЕНО: заполняем обязательное поле name
             equipment.setModelName(model);
             equipment.setCapacity(0.0);
 
@@ -221,6 +219,7 @@ public class ResourceController implements Initializable {
             }
 
             Brigade brigade = new Brigade();
+            brigade.setName(specialization); // <-- ДОБАВЛЕНО: заполняем обязательное поле name
             brigade.setSpecialization(specialization);
             brigade.setSize(size);
 
@@ -328,13 +327,13 @@ public class ResourceController implements Initializable {
 
     private void log(String msg) {
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             logArea.appendText("[" + time + "] " + msg + "\n");
         });
     }
 
     private void showError(String title, String content) {
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setHeaderText(null);
@@ -344,7 +343,7 @@ public class ResourceController implements Initializable {
     }
 
     private void showWarning(String title, String content) {
-        javafx.application.Platform.runLater(() -> {
+        Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle(title);
             alert.setHeaderText(null);

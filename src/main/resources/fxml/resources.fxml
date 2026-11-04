@@ -1,56 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.kuleshov.groundhandling.controller.ResourcesController"
-      spacing="15"
-      stylesheets="/css/dashboard.css">
-
+<VBox fx:id="mainContainer" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.kuleshov.groundhandling.controller.ResourceController"
+      spacing="15">
     <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
 
-    <HBox alignment="CENTER_LEFT" spacing="10">
-        <Label text="Управление ресурсами перрона" styleClass="page-title"/>
-        <Region HBox.hgrow="ALWAYS"/>
-        <Button text="➕ Добавить ресурс" fx:id="addResourceButton" onAction="#handleAddResource"
-                style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-background-radius: 5;"/>
-        <Button text="🔄 Обновить" fx:id="refreshButton" onAction="#handleRefresh"/>
-    </HBox>
+    <Label text="Управление ресурсами перрона" styleClass="page-title"/>
 
-    <HBox spacing="15" styleClass="stats-container">
-        <VBox styleClass="stat-card"><Label text="Всего ресурсов" styleClass="stat-label"/><Label fx:id="totalResourcesLabel" text="0" styleClass="stat-value"/></VBox>
-        <VBox styleClass="stat-card"><Label text="Техника" styleClass="stat-label"/><Label fx:id="equipmentCountLabel" text="0" styleClass="stat-value"/></VBox>
-        <VBox styleClass="stat-card"><Label text="Бригады" styleClass="stat-label"/><Label fx:id="brigadeCountLabel" text="0" styleClass="stat-value"/></VBox>
-        <VBox styleClass="stat-card"><Label text="Свободно" styleClass="stat-label"/><Label fx:id="freeResourcesLabel" text="0" styleClass="stat-value"/></VBox>
-        <VBox styleClass="stat-card"><Label text="Занято" styleClass="stat-label"/><Label fx:id="busyResourcesLabel" text="0" styleClass="stat-value"/></VBox>
-    </HBox>
+    <TabPane fx:id="resourceTabPane" VBox.vgrow="ALWAYS">
+        <Tab fx:id="equipmentTab" text="🚚 Техника" closable="false">
+            <VBox spacing="15">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
 
-    <TabPane VBox.vgrow="ALWAYS">
-        <tabs>
-            <Tab text="🚜 Техника" closable="false">
-                <TableView fx:id="equipmentTable" styleClass="flights-table">
+                <!-- Таблица техники -->
+                <TableView fx:id="equipmentTable" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="equipmentNameColumn" text="Модель" prefWidth="200"/>
-                        <TableColumn fx:id="equipmentCapacityColumn" text="Грузоподъёмность" prefWidth="120"/>
-                        <TableColumn fx:id="equipmentStatusColumn" text="Статус" prefWidth="130"/>
-                        <TableColumn fx:id="equipmentFlightColumn" text="На рейсе" prefWidth="150"/>
-                        <TableColumn fx:id="equipmentActionColumn" text="Действия" prefWidth="200"/>
+                        <TableColumn fx:id="equipmentIdColumn" text="ID" prefWidth="60"/>
+                        <TableColumn fx:id="equipmentModelColumn" text="Модель" prefWidth="200"/>
+                        <TableColumn fx:id="equipmentStatusColumn" text="Статус" prefWidth="120"/>
+                        <TableColumn fx:id="equipmentFlightColumn" text="Назначенный рейс" prefWidth="150"/>
+                        <TableColumn fx:id="equipmentActionsColumn" text="Действия" prefWidth="150"/>
                     </columns>
                 </TableView>
-            </Tab>
 
-            <Tab text="👷 Бригады" closable="false">
-                <TableView fx:id="brigadeTable" styleClass="flights-table">
+                <!-- Добавление новой техники -->
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Модель техники:"/>
+                    <TextField fx:id="newEquipmentModelField" promptText="Например: Тягач T-100" prefWidth="250.0"/>
+                    <Button text="➕ Добавить" onAction="#handleAddEquipment"
+                            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+                </HBox>
+            </VBox>
+        </Tab>
+
+        <Tab fx:id="brigadeTab" text="👷 Бригады" closable="false">
+            <VBox spacing="15">
+                <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
+
+                <!-- Таблица бригад -->
+                <TableView fx:id="brigadeTable" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="brigadeNameColumn" text="Специализация" prefWidth="200"/>
-                        <TableColumn fx:id="brigadeSizeColumn" text="Численность" prefWidth="100"/>
-                        <TableColumn fx:id="brigadeStatusColumn" text="Статус" prefWidth="130"/>
-                        <TableColumn fx:id="brigadeFlightColumn" text="На рейсе" prefWidth="150"/>
-                        <TableColumn fx:id="brigadeActionColumn" text="Действия" prefWidth="200"/>
+                        <TableColumn fx:id="brigadeIdColumn" text="ID" prefWidth="60"/>
+                        <TableColumn fx:id="brigadeSpecializationColumn" text="Специализация" prefWidth="200"/>
+                        <TableColumn fx:id="brigadeSizeColumn" text="Размер (чел.)" prefWidth="120"/>
+                        <TableColumn fx:id="brigadeStatusColumn" text="Статус" prefWidth="120"/>
+                        <TableColumn fx:id="brigadeFlightColumn" text="Назначенный рейс" prefWidth="150"/>
+                        <TableColumn fx:id="brigadeActionsColumn" text="Действия" prefWidth="150"/>
                     </columns>
                 </TableView>
-            </Tab>
-        </tabs>
+
+                <!-- Добавление новой бригады -->
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="Специализация:"/>
+                    <TextField fx:id="newBrigadeSpecializationField" promptText="Например: Погрузочная" prefWidth="200.0"/>
+                    <Label text="Размер (чел.):"/>
+                    <TextField fx:id="newBrigadeSizeField" promptText="Например: 6" prefWidth="80.0"/>
+                    <Button text="➕ Добавить" onAction="#handleAddBrigade"
+                            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+                </HBox>
+            </VBox>
+        </Tab>
     </TabPane>
+
+    <!-- Журнал событий -->
+    <VBox spacing="5">
+        <Label text="📋 Журнал событий" styleClass="section-title"/>
+        <TextArea fx:id="logArea" editable="false" prefHeight="100.0"
+                  style="-fx-background-color: #1e272e; -fx-text-fill: #00d2d3; -fx-font-family: 'Consolas', monospace; -fx-font-size: 12px;"
+                  wrapText="true"/>
+    </VBox>
 </VBox>
