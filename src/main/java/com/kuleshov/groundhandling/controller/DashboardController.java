@@ -71,34 +71,22 @@ public class DashboardController implements Initializable {
 
     @FXML private TextField passengerWeightField;
 
-    @FXML private Button refreshButton;
-    @FXML private Button newFlightButton;
-    @FXML private Button closeDetailsButton;
-    @FXML private Button autoAllocateButton;
-    @FXML private Button addCargoButton;
-    @FXML private Button unloadCargoButton;
-    @FXML private Button saveButton;
-    @FXML private Button deleteButton;
-
     @FXML private TextArea logArea;
 
     private FlightRepository flightRepository;
     private ResourceRepository resourceRepository;
-    private WeightBalanceService weightBalanceService;
     private ResourceAllocationService allocationService;
-    private AircraftRepository aircraftRepository;
     private FlightManagementService flightManagementService;
 
     private Flight selectedFlight;
-    private Timeline autoRefreshTimeline;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         flightRepository = new FlightRepository();
         resourceRepository = new ResourceRepository();
-        weightBalanceService = new WeightBalanceService();
+        WeightBalanceService weightBalanceService = new WeightBalanceService();
         allocationService = new ResourceAllocationService(resourceRepository);
-        aircraftRepository = new AircraftRepository();
+        AircraftRepository aircraftRepository = new AircraftRepository();
         flightManagementService = new FlightManagementServiceImpl(
                 flightRepository, resourceRepository, aircraftRepository, weightBalanceService
         );
@@ -119,7 +107,7 @@ public class DashboardController implements Initializable {
     }
 
     private void startAutoRefresh() {
-        autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_INTERVAL_SECONDS), e -> {
+        Timeline autoRefreshTimeline = new Timeline(new KeyFrame(Duration.seconds(AUTO_REFRESH_INTERVAL_SECONDS), e -> {
             if (selectedFlight == null) {
                 loadFlights();
             }
@@ -662,9 +650,7 @@ public class DashboardController implements Initializable {
 
     private void log(String msg) {
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        Platform.runLater(() -> {
-            logArea.appendText("[" + time + "] " + msg + "\n");
-        });
+        Platform.runLater(() -> logArea.appendText("[" + time + "] " + msg + "\n"));
     }
 
     private void showError(String title, String content) {

@@ -1,6 +1,7 @@
 package com.kuleshov.groundhandling.domain;
 
 import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,11 +25,6 @@ public class Aircraft {
 
     public Aircraft() {}
 
-    public Aircraft(AircraftType type) {
-        this.type = type;
-        this.tailNumber = "AUTO-" + System.currentTimeMillis();
-    }
-
     public Aircraft(AircraftType type, String tailNumber) {
         this.type = type;
         this.tailNumber = tailNumber;
@@ -39,10 +35,6 @@ public class Aircraft {
         compartment.setAircraft(this);
     }
 
-    public void removeCompartment(Compartment compartment) {
-        compartments.remove(compartment);
-        compartment.setAircraft(null);
-    }
 
     public double getMaxPayload() {
         return type != null ? type.getMaxPayload() : 0.0;
@@ -55,7 +47,6 @@ public class Aircraft {
     public String getTailNumber() { return tailNumber; }
     public void setTailNumber(String tailNumber) { this.tailNumber = tailNumber; }
     public List<Compartment> getCompartments() { return compartments; }
-    public void setCompartments(List<Compartment> compartments) { this.compartments = compartments; }
 
     @Override
     public boolean equals(Object o) {

@@ -31,7 +31,4 @@ public class AircraftRepository {
         }
     }
 
-    public void update(Aircraft aircraft) {
-        save(aircraft);
-    }
 }

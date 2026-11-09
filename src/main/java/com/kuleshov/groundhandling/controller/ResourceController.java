@@ -9,7 +9,6 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 
 import java.net.URL;
 import java.time.LocalDateTime;
@@ -18,11 +17,6 @@ import java.util.List;
 import java.util.ResourceBundle;
 
 public class ResourceController implements Initializable {
-
-    @FXML private VBox mainContainer;
-    @FXML private TabPane resourceTabPane;
-    @FXML private Tab equipmentTab;
-    @FXML private Tab brigadeTab;
 
     @FXML private TableView<Equipment> equipmentTable;
     @FXML private TableColumn<Equipment, Long> equipmentIdColumn;
@@ -327,9 +321,7 @@ public class ResourceController implements Initializable {
 
     private void log(String msg) {
         String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-        Platform.runLater(() -> {
-            logArea.appendText("[" + time + "] " + msg + "\n");
-        });
+        Platform.runLater(() -> logArea.appendText("[" + time + "] " + msg + "\n"));
     }
 
     private void showError(String title, String content) {

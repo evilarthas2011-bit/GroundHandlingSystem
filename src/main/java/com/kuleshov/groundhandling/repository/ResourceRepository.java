@@ -54,9 +54,7 @@ public class ResourceRepository {
 
     public Resource save(Resource resource) {
         Transaction tx = null;
-        Session session = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
             Resource managed = session.merge(resource);
             tx.commit();
@@ -64,20 +62,16 @@ public class ResourceRepository {
         } catch (Exception e) {
             if (tx != null) tx.rollback();
             throw new RuntimeException("Ошибка сохранения ресурса: " + e.getMessage(), e);
-        } finally {
-            if (session != null) session.close();
         }
     }
 
-    public Resource update(Resource resource) {
-        return save(resource);
+    public void update(Resource resource) {
+        save(resource);
     }
 
     public void delete(Resource resource) {
         Transaction tx = null;
-        Session session = null;
-        try {
-            session = HibernateUtil.getSessionFactory().openSession();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
             Resource managed = session.merge(resource);
             session.remove(managed);
@@ -85,8 +79,6 @@ public class ResourceRepository {
         } catch (Exception e) {
             if (tx != null) tx.rollback();
             throw new RuntimeException("Ошибка удаления ресурса: " + e.getMessage(), e);
-        } finally {
-            if (session != null) session.close();
         }
     }
 }

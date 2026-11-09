@@ -56,10 +56,6 @@ public class FlightRepository {
         }
     }
 
-    public void update(Flight flight) {
-        save(flight);
-    }
-
     public void delete(Flight flight) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {

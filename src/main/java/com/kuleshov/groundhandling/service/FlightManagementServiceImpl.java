@@ -11,14 +11,12 @@ public class FlightManagementServiceImpl implements FlightManagementService {
 
     private final FlightRepository flightRepository;
     private final ResourceRepository resourceRepository;
-    private final AircraftRepository aircraftRepository;
     private final WeightBalanceService weightBalanceService;
 
     public FlightManagementServiceImpl(FlightRepository flightRepo, ResourceRepository resRepo,
                                        AircraftRepository aircraftRepo, WeightBalanceService weightService) {
         this.flightRepository = flightRepo;
         this.resourceRepository = resRepo;
-        this.aircraftRepository = aircraftRepo;
         this.weightBalanceService = weightService;
     }
 
