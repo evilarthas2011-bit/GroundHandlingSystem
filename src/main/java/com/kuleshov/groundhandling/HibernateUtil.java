@@ -1,8 +1,12 @@
 package com.kuleshov.groundhandling;
 
 import com.kuleshov.groundhandling.domain.*;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+
+import java.util.function.Function;
 
 public class HibernateUtil {
     private static final SessionFactory sessionFactory;
@@ -26,4 +30,27 @@ public class HibernateUtil {
     public static SessionFactory getSessionFactory() {
         return sessionFactory;
     }
+
+    public static <T> T inSession(Function<Session, T> work) {
+        try (Session session = sessionFactory.openSession()) {
+            return work.apply(session);
+        }
+    }
+
+    public static <T> T inTransaction(Function<Session, T> work) {
+        try (Session session = sessionFactory.openSession()) {
+            Transaction tx = session.beginTransaction();
+            try {
+                T result = work.apply(session);
+                tx.commit();
+                return result;
+            } catch (RuntimeException e) {
+                tx.rollback();
+                throw e;
+            }
+        }
+    }
+    private static final String CFG_FILE =
+            System.getProperty("hibernate.cfg", "hibernate.cfg.xml");
+
 }

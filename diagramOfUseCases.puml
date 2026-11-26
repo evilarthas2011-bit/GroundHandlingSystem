@@ -1,0 +1,51 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Диспетчер наземного обслуживания" as Dispatcher
+
+rectangle "Ground Handling System" {
+  usecase "Просмотр табло рейсов" as UC_View
+  usecase "Создание рейса" as UC_Create
+  usecase "Изменение статуса рейса" as UC_Status
+  usecase "Установка веса пассажиров" as UC_Pax
+  usecase "Добавление груза в отсек" as UC_Cargo
+  usecase "Разгрузка последнего груза" as UC_Unload
+  usecase "Назначение ресурсов вручную" as UC_Assign
+  usecase "Авто-распределение ресурсов" as UC_Auto
+  usecase "Удаление рейса" as UC_Delete
+  usecase "Управление ресурсами\n(техника, бригады)" as UC_Resources
+  usecase "Экспорт отчёта в CSV" as UC_Export
+
+  usecase "Контроль грузоподъёмности" as UC_Weight
+  usecase "Проверка допустимости\nперехода статуса" as UC_Transition
+}
+
+Dispatcher --> UC_View
+Dispatcher --> UC_Create
+Dispatcher --> UC_Status
+Dispatcher --> UC_Pax
+Dispatcher --> UC_Cargo
+Dispatcher --> UC_Unload
+Dispatcher --> UC_Assign
+Dispatcher --> UC_Auto
+Dispatcher --> UC_Delete
+Dispatcher --> UC_Resources
+Dispatcher --> UC_Export
+
+UC_Cargo ..> UC_Weight : <<include>>
+UC_Pax ..> UC_Weight : <<include>>
+UC_Status ..> UC_Transition : <<include>>
+UC_Unload ..> UC_Transition : <<include>>
+
+note right of UC_View
+  Табло обновляется автоматически
+  каждые 5 секунд (Timeline)
+end note
+
+note right of UC_Auto
+  При отсутствии свободной техники
+  или бригады операция отклоняется
+  с сообщением об ошибке
+end note
+@enduml

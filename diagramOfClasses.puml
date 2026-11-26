@@ -1,0 +1,233 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty methods
+
+'  DOMAIN
+package "domain" {
+
+  enum FlightStatus {
+    SCHEDULED
+    ARRIVED
+    LOADING
+    BOARDING
+    READY
+    DEPARTED
+    DELAYED
+  }
+
+  enum AircraftType {
+    -displayName : String
+    -compartments : List<CompartmentSpec>
+    +getDisplayName() : String
+    +getCompartments() : List<CompartmentSpec>
+  }
+
+  class CompartmentSpec {
+    -name : String
+    -maxWeight : double
+  }
+
+  class Flight {
+    -id : Long
+    -flightNumber : String
+    -status : FlightStatus
+    -departureDateTime : LocalDateTime
+    -passengerWeight : Double
+    +getTotalCargoWeight() : double
+    +getTotalWeight() : double
+    +isClosedForOperations() : boolean
+    +addCargo(Cargo)
+    +removeCargo(Cargo)
+    +{static} createFlight(..) : см. сервис
+  }
+
+  class Aircraft {
+    -id : Long
+    -aircraftType : AircraftType
+    -tailNumber : String
+    +getMaxPayload() : double
+    +{static} createFor(AircraftType, String) : Aircraft
+  }
+
+  class Compartment {
+    -id : Long
+    -name : String
+    -maxWeight : Double
+    +getCurrentWeight() : double
+    +getLoadRatio() : double
+    +{static} create(String, double, Aircraft) : Compartment
+  }
+
+  class Cargo {
+    -id : Long
+    -weight : Double
+    -description : String
+    -addedAt : LocalDateTime
+  }
+
+  abstract class Resource {
+    -id : Long
+    -name : String
+    -assignedFlight : Flight
+    +isFree() : boolean
+  }
+
+  class Equipment {
+    -modelName : String
+    -capacity : Double
+  }
+
+  class Brigade {
+    -specialization : String
+    -size : Integer
+  }
+
+  class FlightStatusTransitionValidator {
+    -{static} ALLOWED : Map<FlightStatus, Set<FlightStatus>>
+    +canTransition(from, to) : boolean
+  }
+}
+
+' ==================== SERVICE ====================
+package "service" {
+
+  interface FlightManagementService {
+    +createFlight(number, departure, type, tail) : OperationResult
+    +updateFlightStatus(id, status) : OperationResult
+    +updatePassengerWeight(id, weight) : OperationResult
+    +addCargoToFlight(flightId, compartmentId, weight, descr) : OperationResult
+    +unloadLastCargoFromFlight(flightId, compartmentId) : OperationResult
+    +assignResources(flightId, equipmentId, brigadeId) : OperationResult
+    +deleteFlight(id) : OperationResult
+    +getAssignedResources(Flight) : List<Resource>
+  }
+
+  class FlightManagementServiceImpl {
+    -flightRepository : FlightRepository
+    -resourceRepository : ResourceRepository
+    -aircraftRepository : AircraftRepository
+    -weightBalanceService : WeightBalanceService
+    -statusValidator : FlightStatusTransitionValidator
+  }
+
+  class ResourceAllocationService {
+    -resourceRepository : ResourceRepository
+    +allocateResources(Long flightId) : OperationResult
+    +allocateResources(Flight) : OperationResult
+  }
+
+  class WeightBalanceService {
+    +validateAndAddCargo(Flight, Cargo) : boolean
+    +unloadLastCargo(Flight, Compartment) : boolean
+  }
+
+  class OperationResult {
+    -success : boolean
+    -message : String
+    +{static} success(String) : OperationResult
+    +{static} error(String) : OperationResult
+    +isSuccess() : boolean
+    +getMessage() : String
+  }
+}
+
+' ==================== REPOSITORY ====================
+package "repository" {
+
+  interface FlightRepository {
+    +findAll() : List<Flight>
+    +findByIdWithDetails(Long) : Flight
+    +findByFlightNumber(String) : Flight
+    +save(Flight)
+    +delete(Flight)
+  }
+
+  class FlightRepositoryImpl {
+  }
+
+  interface AircraftRepository {
+    +findAll() : List<Aircraft>
+    +findByTailNumber(String) : Aircraft
+    +save(Aircraft)
+  }
+
+  class AircraftRepositoryImpl {
+  }
+
+  interface ResourceRepository {
+    +findAll() : List<Resource>
+    +findByAssignedFlight(Flight) : List<Resource>
+    +findAvailableEquipment() : List<Equipment>
+    +findAvailableBrigades() : List<Brigade>
+    +save(Resource)
+    +delete(Resource)
+    +release(Long)
+  }
+
+  class ResourceRepositoryImpl {
+  }
+}
+
+' ==================== CONTROLLER / UTIL ====================
+package "controller" {
+  class DashboardController
+  class FlightFormController
+  class ResourceController
+}
+
+package "util / app" {
+  class HibernateUtil {
+    +{static} getSessionFactory() : SessionFactory
+    +{static} inSession(Function) : T
+    +{static} inTransaction(Function) : T
+  }
+
+  class DemoDataInitializer {
+    +{static} initialize()
+  }
+
+  class MainApp {
+    +start(Stage)
+    +{static} main(String[])
+  }
+}
+
+' ==================== RELATIONS ====================
+' Домен
+Flight "1" --> "0..1" Aircraft
+Aircraft "1" *-- "2" Compartment : compartments
+Flight "1" *-- "0..*" Cargo : cargoList
+Compartment "1" --> "0..*" Cargo
+Resource <|-- Equipment
+Resource <|-- Brigade
+Resource "0..*" --> "0..1" Flight : assignedFlight
+AircraftType "1" o-- "2" CompartmentSpec
+
+' Сервисы
+FlightManagementServiceImpl .up.|> FlightManagementService
+FlightManagementServiceImpl --> FlightRepository
+FlightManagementServiceImpl --> ResourceRepository
+FlightManagementServiceImpl --> AircraftRepository
+FlightManagementServiceImpl --> WeightBalanceService
+FlightManagementServiceImpl *-- FlightStatusTransitionValidator
+ResourceAllocationService --> ResourceRepository
+FlightManagementServiceImpl ..> OperationResult
+ResourceAllocationService ..> OperationResult
+
+' Репозитории
+FlightRepositoryImpl .up.|> FlightRepository
+AircraftRepositoryImpl .up.|> AircraftRepository
+ResourceRepositoryImpl .up.|> ResourceRepository
+FlightRepositoryImpl ..> HibernateUtil
+AircraftRepositoryImpl ..> HibernateUtil
+ResourceRepositoryImpl ..> HibernateUtil
+
+' Контроллеры и запуск
+DashboardController --> FlightManagementService
+DashboardController --> ResourceAllocationService
+FlightFormController --> FlightManagementService
+ResourceController --> ResourceRepository
+MainApp --> DemoDataInitializer : initialize()
+DemoDataInitializer ..> HibernateUtil
+@enduml

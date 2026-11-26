@@ -14,46 +14,61 @@ public class Aircraft {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    private AircraftType type;
+    @Column(name = "aircraft_type", nullable = false, length = 32)
+    private AircraftType aircraftType;
 
-    @Column(name = "tail_number", unique = true, nullable = false)
+    @Column(name = "tail_number", nullable = false, unique = true, length = 32)
     private String tailNumber;
 
-    @OneToMany(mappedBy = "aircraft", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "aircraft", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.EAGER)
+    @OrderBy("id")
     private List<Compartment> compartments = new ArrayList<>();
 
-    public Aircraft() {}
-
-    public Aircraft(AircraftType type, String tailNumber) {
-        this.type = type;
-        this.tailNumber = tailNumber;
+    public Aircraft() {
     }
 
-    public void addCompartment(Compartment compartment) {
-        compartments.add(compartment);
-        compartment.setAircraft(this);
-    }
-
-
-    public double getMaxPayload() {
-        return type != null ? type.getMaxPayload() : 0.0;
+    public static Aircraft createFor(AircraftType type, String tailNumber) {
+        Aircraft aircraft = new Aircraft();
+        aircraft.setAircraftType(type);
+        aircraft.setTailNumber(tailNumber);
+        for (CompartmentSpec spec : type.getCompartments()) {
+            aircraft.compartments.add(Compartment.create(spec.name(), spec.maxWeight(), aircraft));
+        }
+        return aircraft;
     }
 
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public AircraftType getType() { return type; }
-    public void setType(AircraftType type) { this.type = type; }
+
+    public AircraftType getAircraftType() { return aircraftType; }
+
+    public void setAircraftType(AircraftType aircraftType) {
+        if (aircraftType == null) {
+            throw new IllegalArgumentException("Тип воздушного судна не может быть пустым");
+        }
+        this.aircraftType = aircraftType;
+    }
+
     public String getTailNumber() { return tailNumber; }
-    public void setTailNumber(String tailNumber) { this.tailNumber = tailNumber; }
+    public double getMaxPayload() {
+        return compartments.stream().mapToDouble(Compartment::getMaxWeight).sum();
+    }
+
+    public void setTailNumber(String tailNumber) {
+        if (tailNumber == null || tailNumber.isBlank()) {
+            throw new IllegalArgumentException("Бортовой номер не может быть пустым");
+        }
+        this.tailNumber = tailNumber.trim().toUpperCase();
+    }
+
     public List<Compartment> getCompartments() { return compartments; }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Aircraft aircraft = (Aircraft) o;
-        return id != null && id.equals(aircraft.id);
+        if (!(o instanceof Aircraft)) return false;
+        Aircraft other = (Aircraft) o;
+        return id != null && id.equals(other.id);
     }
 
     @Override

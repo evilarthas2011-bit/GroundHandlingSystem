@@ -1,19 +1,32 @@
 package com.kuleshov.groundhandling.domain;
 
+import java.util.List;
+
 public enum AircraftType {
-    BOEING_737("Boeing 737-800", 20000.0),
-    AIRBUS_A320("Airbus A320", 18000.0),
-    BOEING_777("Boeing 777-300", 50000.0),
-    AIRBUS_A350("Airbus A350-900", 55000.0);
+
+    BOEING_737("Boeing 737", List.of(
+            new CompartmentSpec("Передний отсек", 3400.0),
+            new CompartmentSpec("Задний отсек", 2800.0)
+    )),
+
+    AIRBUS_A320("Airbus A320", List.of(
+            new CompartmentSpec("Передний отсек", 3200.0),
+            new CompartmentSpec("Задний отсек", 2600.0)
+    ));
 
     private final String displayName;
-    private final double maxPayload;
+    private final List<CompartmentSpec> compartments;
 
-    AircraftType(String displayName, double maxPayload) {
+    AircraftType(String displayName, List<CompartmentSpec> compartments) {
         this.displayName = displayName;
-        this.maxPayload = maxPayload;
+        this.compartments = compartments;
     }
 
-    public String getDisplayName() { return displayName; }
-    public double getMaxPayload() { return maxPayload; }
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public List<CompartmentSpec> getCompartments() {
+        return compartments;
+    }
 }

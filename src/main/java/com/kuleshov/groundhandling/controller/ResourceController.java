@@ -1,7 +1,7 @@
 package com.kuleshov.groundhandling.controller;
 
 import com.kuleshov.groundhandling.domain.*;
-import com.kuleshov.groundhandling.repository.ResourceRepository;
+import com.kuleshov.groundhandling.repository.ResourceRepositoryImpl;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -39,11 +39,11 @@ public class ResourceController implements Initializable {
 
     @FXML private TextArea logArea;
 
-    private ResourceRepository resourceRepository;
+    private ResourceRepositoryImpl resourceRepository;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        resourceRepository = new ResourceRepository();
+        resourceRepository = new ResourceRepositoryImpl();
 
         setupEquipmentTable();
         setupBrigadeTable();
@@ -84,17 +84,20 @@ public class ResourceController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
+                Equipment equipment = empty || getIndex() < 0
+                        ? null
+                        : getTableView().getItems().get(getIndex());
+                if (equipment == null) {
                     setGraphic(null);
+                } else if (equipment.getAssignedFlight() != null) {
+                    setGraphic(freeButton);
                 } else {
-                    Equipment equipment = getTableView().getItems().get(getIndex());
-                    if (equipment.getAssignedFlight() != null) {
-                        setGraphic(freeButton);
-                    } else {
-                        setGraphic(deleteButton);
-                    }
+                    setGraphic(deleteButton);
                 }
             }
+
+
+
         });
     }
 
@@ -133,17 +136,20 @@ public class ResourceController implements Initializable {
             @Override
             protected void updateItem(Void item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty) {
+                Brigade brigade = empty || getIndex() < 0
+                        ? null
+                        : getTableView().getItems().get(getIndex());
+                if (brigade == null) {
                     setGraphic(null);
+                } else if (brigade.getAssignedFlight() != null) {
+                    setGraphic(freeButton);
                 } else {
-                    Brigade brigade = getTableView().getItems().get(getIndex());
-                    if (brigade.getAssignedFlight() != null) {
-                        setGraphic(freeButton);
-                    } else {
-                        setGraphic(deleteButton);
-                    }
+                    setGraphic(deleteButton);
                 }
             }
+
+
+
         });
     }
 
@@ -163,6 +169,9 @@ public class ResourceController implements Initializable {
 
             equipmentTable.setItems(FXCollections.observableArrayList(equipmentList));
             brigadeTable.setItems(FXCollections.observableArrayList(brigadeList));
+
+            equipmentTable.refresh();
+            brigadeTable.refresh();
 
         } catch (Exception e) {
             log("Ошибка загрузки ресурсов: " + e.getMessage());
@@ -231,6 +240,7 @@ public class ResourceController implements Initializable {
         }
     }
 
+
     private void handleFreeEquipment(Equipment equipment) {
         if (equipment == null) return;
 
@@ -239,11 +249,11 @@ public class ResourceController implements Initializable {
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    equipment.setAssignedFlight(null);
-                    resourceRepository.save(equipment);
+                    resourceRepository.release(equipment.getId()); // <-- вместо setAssignedFlight(null) + save
                     log("Освобождена техника: " + equipment.getModelName());
                     loadResources();
                 } catch (Exception e) {
+                    e.printStackTrace();
                     log("Ошибка освобождения техники: " + e.getMessage());
                     showError("Ошибка", "Не удалось освободить технику.\n" + e.getMessage());
                 }
@@ -259,17 +269,18 @@ public class ResourceController implements Initializable {
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    brigade.setAssignedFlight(null);
-                    resourceRepository.save(brigade);
+                    resourceRepository.release(brigade.getId()); // <-- то же самое
                     log("Освобождена бригада: " + brigade.getSpecialization());
                     loadResources();
                 } catch (Exception e) {
+                    e.printStackTrace();
                     log("Ошибка освобождения бригады: " + e.getMessage());
                     showError("Ошибка", "Не удалось освободить бригаду.\n" + e.getMessage());
                 }
             }
         });
     }
+
 
     private void handleDeleteEquipment(Equipment equipment) {
         if (equipment == null) return;

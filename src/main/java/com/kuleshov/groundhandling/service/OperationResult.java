@@ -9,13 +9,8 @@ public class OperationResult {
         this.message = message;
     }
 
-    public static OperationResult success(String message) {
-        return new OperationResult(true, message);
-    }
-
-    public static OperationResult error(String message) {
-        return new OperationResult(false, message);
-    }
+    public static OperationResult success(String message) { return new OperationResult(true, message); }
+    public static OperationResult error(String message) { return new OperationResult(false, message); }
 
     public boolean isSuccess() { return success; }
     public String getMessage() { return message; }

@@ -7,9 +7,17 @@
         <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
         <property name="hibernate.connection.url">jdbc:postgresql://localhost:5433/ground_handling</property>
         <property name="hibernate.connection.username">admin</property>
+
         <property name="hibernate.connection.password">1337</property>
         <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQLDialect</property>
-        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <property name="hibernate.hbm2ddl.auto">validate</property>
+
+        <property name="hibernate.hikari.connectionTimeout">5000</property>
+        <property name="hibernate.hikari.minimumIdle">2</property>
+        <property name="hibernate.hikari.maximumPoolSize">10</property>
+        <property name="hibernate.hikari.poolName">ground-handling-pool</property>
+
         <property name="hibernate.show_sql">false</property>
         <property name="hibernate.format_sql">true</property>
     </session-factory>

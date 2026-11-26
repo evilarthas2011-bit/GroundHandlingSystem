@@ -1,113 +1,125 @@
 package com.kuleshov.groundhandling.controller;
 
-import com.kuleshov.groundhandling.domain.*;
-import com.kuleshov.groundhandling.repository.AircraftRepository;
-import com.kuleshov.groundhandling.repository.FlightRepository;
+import com.kuleshov.groundhandling.domain.AircraftType;
+import com.kuleshov.groundhandling.repository.AircraftRepositoryImpl;
+import com.kuleshov.groundhandling.repository.FlightRepositoryImpl;
+import com.kuleshov.groundhandling.repository.ResourceRepositoryImpl;
+import com.kuleshov.groundhandling.service.FlightManagementService;
+import com.kuleshov.groundhandling.service.FlightManagementServiceImpl;
+import com.kuleshov.groundhandling.service.OperationResult;
+import com.kuleshov.groundhandling.service.WeightBalanceService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.stage.Stage;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 
-import java.net.URL;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ResourceBundle;
+import java.time.LocalTime;
 
-public class FlightFormController implements Initializable {
+public class FlightFormController {
 
     @FXML private TextField flightNumberField;
-    @FXML private TextField tailNumberField;
+    @FXML private DatePicker departureDatePicker;
+    @FXML private ComboBox<Integer> hourComboBox;
+    @FXML private ComboBox<Integer> minuteComboBox;
     @FXML private ComboBox<AircraftType> aircraftTypeComboBox;
-    @FXML private ComboBox<FlightStatus> statusComboBox;
-    @FXML private DatePicker datePicker;
-    @FXML private Label errorLabel;
-    @FXML private Button cancelButton;
+    @FXML private TextField tailNumberField;
     @FXML private Button createButton;
+    @FXML private Label statusLabel;
 
-    private FlightRepository flightRepository;
-    private AircraftRepository aircraftRepository;
+    private FlightManagementService flightManagementService;
+
+    /** Колбэк: дашборд подписывается на событие «рейс создан», чтобы обновить таблицу. */
     private Runnable onFlightCreated;
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-        flightRepository = new FlightRepository();
-        aircraftRepository = new AircraftRepository();
-
-        aircraftTypeComboBox.setItems(FXCollections.observableArrayList(AircraftType.values()));
-        aircraftTypeComboBox.getSelectionModel().selectFirst();
-
-        statusComboBox.setItems(FXCollections.observableArrayList(FlightStatus.values()));
-        statusComboBox.getSelectionModel().select(FlightStatus.SCHEDULED);
-
-        datePicker.setValue(LocalDate.now());
-    }
 
     public void setOnFlightCreated(Runnable onFlightCreated) {
         this.onFlightCreated = onFlightCreated;
     }
 
     @FXML
-    private void handleCreate() {
-        errorLabel.setText("");
+    public void initialize() {
+        flightManagementService = new FlightManagementServiceImpl(
+                new FlightRepositoryImpl(),
+                new ResourceRepositoryImpl(),
+                new AircraftRepositoryImpl(),
+                new WeightBalanceService());
 
-        String flightNumber = flightNumberField.getText().trim();
-        String tailNumber = tailNumberField.getText().trim();
-        LocalDate selectedDate = datePicker.getValue();
+        aircraftTypeComboBox.setItems(FXCollections.observableArrayList(AircraftType.values()));
+        aircraftTypeComboBox.getSelectionModel().selectFirst();
 
-        if (flightNumber.isEmpty() || tailNumber.isEmpty() || selectedDate == null) {
-            errorLabel.setText("Заполните все обязательные поля");
-            return;
-        }
+        hourComboBox.setItems(FXCollections.observableArrayList(
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23));
+        hourComboBox.getSelectionModel().select(Integer.valueOf(LocalTime.now().getHour()));
 
-        try {
-            LocalDateTime flightDateTime = selectedDate.atStartOfDay();
-            AircraftType aircraftType = aircraftTypeComboBox.getValue();
-
-            Aircraft newAircraft = new Aircraft(aircraftType, tailNumber);
-
-            if (aircraftType == AircraftType.BOEING_737) {
-                newAircraft.addCompartment(new Compartment("Носовой отсек", 3000.0));
-                newAircraft.addCompartment(new Compartment("Хвостовой отсек", 4000.0));
-            } else if (aircraftType == AircraftType.AIRBUS_A320) {
-                newAircraft.addCompartment(new Compartment("Носовой отсек", 2500.0));
-                newAircraft.addCompartment(new Compartment("Хвостовой отсек", 3500.0));
-            } else if (aircraftType == AircraftType.BOEING_777) {
-                newAircraft.addCompartment(new Compartment("Носовой отсек", 10000.0));
-                newAircraft.addCompartment(new Compartment("Хвостовой отсек", 15000.0));
-            } else {
-                newAircraft.addCompartment(new Compartment("Носовой отсек", 12000.0));
-                newAircraft.addCompartment(new Compartment("Хвостовой отсек", 18000.0));
-            }
-
-            aircraftRepository.save(newAircraft);
-
-            Flight flight = new Flight(flightNumber, aircraftType, flightDateTime);
-            flight.setAircraft(newAircraft);
-            flight.setStatus(statusComboBox.getValue());
-            flight.setTotalCargoWeight(0.0);
-
-            flightRepository.save(flight);
-
-            if (onFlightCreated != null) {
-                onFlightCreated.run();
-            }
-
-            Stage stage = (Stage) createButton.getScene().getWindow();
-            stage.close();
-
-        } catch (org.hibernate.exception.ConstraintViolationException e) {
-            errorLabel.setText("Бортовой номер '" + tailNumberField.getText().trim() +
-                    "' уже существует. Введите уникальный номер.");
-        } catch (Exception e) {
-            errorLabel.setText("Ошибка сохранения: " + e.getMessage());
-            e.printStackTrace();
-        }
+        minuteComboBox.setItems(FXCollections.observableArrayList(0, 15, 30, 45));
+        minuteComboBox.getSelectionModel().select(Integer.valueOf(0));
     }
 
     @FXML
+    private void handleCreate() {
+        try {
+            AircraftType selectedType = aircraftTypeComboBox.getValue();
+            if (selectedType == null) {
+                showStatus("Выберите тип воздушного судна", false);
+                return;
+            }
+
+            LocalDateTime departureDateTime = buildDepartureDateTime();
+            if (departureDateTime == null) {
+                return;
+            }
+
+            OperationResult result = flightManagementService.createFlight(
+                    flightNumberField.getText(), departureDateTime,
+                    selectedType, tailNumberField.getText());
+
+            showStatus(result.getMessage(), result.isSuccess());
+            if (result.isSuccess()) {
+                clearForm();
+                if (onFlightCreated != null) {
+                    onFlightCreated.run();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showStatus("Ошибка: " + e.getMessage(), false);
+        }
+    }
+
+
+    @FXML
     private void handleCancel() {
-        Stage stage = (Stage) cancelButton.getScene().getWindow();
-        stage.close();
+        flightNumberField.getScene().getWindow().hide();
+    }
+
+    private LocalDateTime buildDepartureDateTime() {
+        if (departureDatePicker.getValue() == null) {
+            showStatus("Выберите дату вылета", false);
+            return null;
+        }
+        Integer hour = hourComboBox.getValue();
+        Integer minute = minuteComboBox.getValue();
+        if (hour == null || minute == null) {
+            showStatus("Выберите время вылета", false);
+            return null;
+        }
+        return departureDatePicker.getValue().atTime(hour, minute);
+    }
+
+    private void clearForm() {
+        flightNumberField.clear();
+        tailNumberField.clear();
+        departureDatePicker.setValue(null);
+    }
+
+    private void showStatus(String message, boolean success) {
+        statusLabel.setText(message);
+        statusLabel.setStyle(success
+                ? "-fx-text-fill: #2e7d32;"
+                : "-fx-text-fill: #c62828;");
     }
 }
