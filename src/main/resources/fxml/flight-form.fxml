@@ -52,7 +52,7 @@
         <ComboBox fx:id="aircraftTypeComboBox" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
 
         <Label text="Бортовой номер:" GridPane.rowIndex="4"/>
-        <TextField fx:id="tailNumberField" promptText="RA-12345" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+        <ComboBox fx:id="tailComboBox" prefWidth="250" promptText="Выберите борт" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
     </GridPane>
 
     <Label fx:id="statusLabel" wrapText="true" style="-fx-padding: 5 0;"/>

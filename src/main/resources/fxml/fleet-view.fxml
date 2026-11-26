@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.control.TableColumn?>
+<VBox alignment="TOP_CENTER" spacing="10"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.kuleshov.groundhandling.controller.FleetViewController">
+
+    <padding>
+        <Insets bottom="20" left="20" right="20" top="20"/>
+    </padding>
+
+    <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Парк воздушных судов"/>
+
+    <TableView fx:id="fleetTable" prefHeight="350" prefWidth="640">
+        <columns>
+            <TableColumn fx:id="tailColumn" prefWidth="140" text="Бортовой номер"/>
+            <TableColumn fx:id="typeColumn" prefWidth="140" text="Тип ВС"/>
+            <TableColumn fx:id="payloadColumn" prefWidth="120" text="Грузоподъёмность"/>
+            <TableColumn fx:id="fwdColumn" prefWidth="90" text="Отсек FWD, кг"/>
+            <TableColumn fx:id="aftColumn" prefWidth="90" text="Отсек AFT, кг"/>
+        </columns>
+    </TableView>
+
+
+    <Label style="-fx-font-weight: bold;" text="Добавить борт"/>
+
+    <GridPane hgap="10" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="150"/>
+            <ColumnConstraints hgrow="ALWAYS" minWidth="250"/>
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints prefHeight="35"/>
+            <RowConstraints prefHeight="35"/>
+        </rowConstraints>
+
+        <Label text="Тип воздушного судна:" GridPane.rowIndex="0"/>
+        <ComboBox fx:id="fleetTypeComboBox" prefWidth="250" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+        <Label text="Бортовой номер:" GridPane.rowIndex="1"/>
+        <TextField fx:id="newTailField" promptText="Например: RA-73106" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    </GridPane>
+
+    <Label fx:id="fleetStatusLabel" wrapText="true"/>
+
+    <HBox alignment="CENTER_RIGHT" spacing="10">
+        <Button fx:id="addAircraftButton" onAction="#handleAddAircraft" text="Добавить борт"/>
+        <Button fx:id="closeFleetButton" onAction="#handleClose" text="Закрыть"/>
+    </HBox>
+</VBox>

@@ -50,8 +50,16 @@ class FlightManagementServiceTest extends IntegrationTestBase {
                         .setParameter("n", number)
                         .uniqueResult());
     }
-
-    // ---------- createFlight: валидация ----------
+    private Long createFlightEntity(String number, String tail, AircraftType type) {
+        return HibernateUtil.inTransaction(session -> {
+            Aircraft aircraft = Aircraft.createFor(type, tail);
+            session.persist(aircraft);
+            Flight flight = new Flight(number, LocalDateTime.now().plusDays(1), aircraft);
+            flight.setStatus(FlightStatus.SCHEDULED);
+            session.persist(flight);
+            return flight.getId();
+        });
+    }
 
     @Test
     @DisplayName("createFlight: пустой номер рейса — ошибка")
@@ -103,7 +111,6 @@ class FlightManagementServiceTest extends IntegrationTestBase {
                 || second.getMessage().toLowerCase().contains("дубл"));
     }
 
-    // ---------- createFlight: успешный сценарий ----------
 
     @Test
     @DisplayName("createFlight: валидный рейс создан со статусом SCHEDULED")
@@ -120,7 +127,6 @@ class FlightManagementServiceTest extends IntegrationTestBase {
         assertEquals(tomorrow, flight.getDepartureDateTime());
     }
 
-    // ---------- Гейт улетевшего рейса ----------
 
     @Test
     @DisplayName("Рейс в статусе DEPARTED закрыт для погрузки и назначения ресурсов")
@@ -141,5 +147,75 @@ class FlightManagementServiceTest extends IntegrationTestBase {
 
         assertTrue(flight.isClosedForOperations(),
                 "гейт должен блокировать операции над улетевшим рейсом");
+    } @Test
+    @DisplayName("updatePassengerWeight: вес в пределах остатка грузоподъёмности сохраняется")
+    void passengerWeight_withinLimit_success() {
+        Long flightId = createFlightEntity("SU-7001", "RA-70001", AircraftType.BOEING_737);
+
+        OperationResult result = service.updatePassengerWeight(flightId, 6000.0);
+        assertTrue(result.isSuccess(), "6000 из 6200 должно приниматься: " + result.getMessage());
+
+        Double persisted = HibernateUtil.inTransaction(session ->
+                session.get(Flight.class, flightId).getPassengerWeight());
+        assertEquals(6000.0, persisted, 0.001, "вес пассажиров должен сохраниться в базе");
+    }
+
+    @Test
+    @DisplayName("updatePassengerWeight: вес сверх грузоподъёмности борта отклоняется")
+    void passengerWeight_overLimit_rejected() {
+        Long flightId = createFlightEntity("SU-7002", "RA-70002", AircraftType.BOEING_737);
+
+        OperationResult result = service.updatePassengerWeight(flightId, 7000.0);
+        assertFalse(result.isSuccess(), "7000 больше payload 6200 — должно отклоняться");
+
+        Double persisted = HibernateUtil.inTransaction(session ->
+                session.get(Flight.class, flightId).getPassengerWeight());
+        assertEquals(0.0, persisted, 0.001, "отклонённый вес не должен сохраниться");
+    }
+
+    @Test
+    @DisplayName("updatePassengerWeight: учитывает уже загруженный груз")
+    void passengerWeight_considersCargo_rejected() {
+        Long flightId = createFlightEntity("SU-7003", "RA-70003", AircraftType.BOEING_737);
+
+        Long compartmentId = HibernateUtil.inTransaction(session ->
+                session.get(Flight.class, flightId).getAircraft().getCompartments().get(0).getId());
+
+        // грузим 1000 кг: остаток payload = 6200 - 1000 = 5200
+        OperationResult cargoResult = service.addCargoToFlight(
+                flightId, compartmentId, 1000.0, "Груз для проверки пассажиров");
+        assertTrue(cargoResult.isSuccess(), "груз 1000 кг должен приниматься: " + cargoResult.getMessage());
+
+        OperationResult over = service.updatePassengerWeight(flightId, 5300.0);
+        assertFalse(over.isSuccess(), "1000 + 5300 > 6200 — вес пассажиров должен отклоняться");
+
+        OperationResult exact = service.updatePassengerWeight(flightId, 5200.0);
+        assertTrue(exact.isSuccess(), "1000 + 5200 ровно 6200 — должно приниматься: " + exact.getMessage());
+    }
+
+    @Test
+    @DisplayName("updatePassengerWeight: отрицательный вес отклоняется")
+    void passengerWeight_negative_rejected() {
+        Long flightId = createFlightEntity("SU-7004", "RA-70004", AircraftType.BOEING_737);
+
+        OperationResult result = service.updatePassengerWeight(flightId, -100.0);
+        assertFalse(result.isSuccess());
+        assertTrue(result.getMessage().toLowerCase().contains("отрицательн"));
+    }
+
+    @Test
+    @DisplayName("updatePassengerWeight: рейс в статусе DEPARTED закрыт для изменения")
+    void passengerWeight_departedFlight_rejected() {
+        Long flightId = createFlightEntity("SU-7005", "RA-70005", AircraftType.BOEING_737);
+
+        HibernateUtil.inTransaction(session -> {
+            Flight f = session.get(Flight.class, flightId);
+            f.setStatus(FlightStatus.DEPARTED);
+            return null;
+        });
+
+        OperationResult result = service.updatePassengerWeight(flightId, 1000.0);
+        assertFalse(result.isSuccess(), "улетевший рейс закрыт для операций");
+        assertTrue(result.getMessage().toLowerCase().contains("закрыт"));
     }
 }

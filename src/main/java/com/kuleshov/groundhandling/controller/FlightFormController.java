@@ -1,6 +1,8 @@
 package com.kuleshov.groundhandling.controller;
 
+import com.kuleshov.groundhandling.domain.Aircraft;
 import com.kuleshov.groundhandling.domain.AircraftType;
+import com.kuleshov.groundhandling.repository.AircraftRepository;
 import com.kuleshov.groundhandling.repository.AircraftRepositoryImpl;
 import com.kuleshov.groundhandling.repository.FlightRepositoryImpl;
 import com.kuleshov.groundhandling.repository.ResourceRepositoryImpl;
@@ -9,6 +11,7 @@ import com.kuleshov.groundhandling.service.FlightManagementServiceImpl;
 import com.kuleshov.groundhandling.service.OperationResult;
 import com.kuleshov.groundhandling.service.WeightBalanceService;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -18,6 +21,8 @@ import javafx.scene.control.TextField;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class FlightFormController {
 
@@ -26,11 +31,12 @@ public class FlightFormController {
     @FXML private ComboBox<Integer> hourComboBox;
     @FXML private ComboBox<Integer> minuteComboBox;
     @FXML private ComboBox<AircraftType> aircraftTypeComboBox;
-    @FXML private TextField tailNumberField;
+    @FXML private ComboBox<Aircraft> tailComboBox;
     @FXML private Button createButton;
     @FXML private Label statusLabel;
 
     private FlightManagementService flightManagementService;
+    private AircraftRepository aircraftRepository;
 
     /** Колбэк: дашборд подписывается на событие «рейс создан», чтобы обновить таблицу. */
     private Runnable onFlightCreated;
@@ -41,10 +47,11 @@ public class FlightFormController {
 
     @FXML
     public void initialize() {
+        aircraftRepository = new AircraftRepositoryImpl();
         flightManagementService = new FlightManagementServiceImpl(
                 new FlightRepositoryImpl(),
                 new ResourceRepositoryImpl(),
-                new AircraftRepositoryImpl(),
+                aircraftRepository,
                 new WeightBalanceService());
 
         aircraftTypeComboBox.setItems(FXCollections.observableArrayList(AircraftType.values()));
@@ -57,6 +64,32 @@ public class FlightFormController {
 
         minuteComboBox.setItems(FXCollections.observableArrayList(0, 15, 30, 45));
         minuteComboBox.getSelectionModel().select(Integer.valueOf(0));
+
+        loadFleet();
+
+        // при смене типа ВС список бортов фильтруется под выбранный тип
+        aircraftTypeComboBox.valueProperty().addListener((obs, oldType, newType) -> loadFleet());
+    }
+
+    private void loadFleet() {
+        List<Aircraft> fleet = aircraftRepository.findAll();
+        AircraftType selectedType = aircraftTypeComboBox.getValue();
+        if (selectedType != null) {
+            fleet = fleet.stream()
+                    .filter(a -> a.getAircraftType() == selectedType)
+                    .collect(Collectors.toList());
+        }
+        ObservableList<Aircraft> items = FXCollections.observableList(fleet);
+        tailComboBox.setItems(items);
+        tailComboBox.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
+            @Override
+            protected void updateItem(Aircraft a, boolean empty) {
+                super.updateItem(a, empty);
+                setText(empty || a == null ? null : a.getTailNumber());
+            }
+        });
+        tailComboBox.setButtonCell(tailComboBox.getCellFactory().call(null));
+        tailComboBox.getSelectionModel().clearSelection();
     }
 
     @FXML
@@ -68,6 +101,12 @@ public class FlightFormController {
                 return;
             }
 
+            Aircraft selectedAircraft = tailComboBox.getValue();
+            if (selectedAircraft == null) {
+                showStatus("Выберите борт из списка", false);
+                return;
+            }
+
             LocalDateTime departureDateTime = buildDepartureDateTime();
             if (departureDateTime == null) {
                 return;
@@ -75,7 +114,7 @@ public class FlightFormController {
 
             OperationResult result = flightManagementService.createFlight(
                     flightNumberField.getText(), departureDateTime,
-                    selectedType, tailNumberField.getText());
+                    selectedType, selectedAircraft.getTailNumber());
 
             showStatus(result.getMessage(), result.isSuccess());
             if (result.isSuccess()) {
@@ -89,7 +128,6 @@ public class FlightFormController {
             showStatus("Ошибка: " + e.getMessage(), false);
         }
     }
-
 
     @FXML
     private void handleCancel() {
@@ -112,7 +150,7 @@ public class FlightFormController {
 
     private void clearForm() {
         flightNumberField.clear();
-        tailNumberField.clear();
+        tailComboBox.getSelectionModel().clearSelection();
         departureDatePicker.setValue(null);
     }
 

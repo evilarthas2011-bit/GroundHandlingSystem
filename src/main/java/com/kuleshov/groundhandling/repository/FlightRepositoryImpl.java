@@ -15,9 +15,8 @@ public class FlightRepositoryImpl implements FlightRepository {
     @Override
     public List<Flight> findAll(Session session) {
         return session.createQuery(
-                "SELECT DISTINCT f FROM Flight f LEFT JOIN FETCH f.aircraft",
-                Flight.class).getResultList();
-    }
+                "FROM Flight f LEFT JOIN FETCH f.aircraft ORDER BY f.flightNumber",
+                Flight.class).getResultList();}
 
     @Override
     public Flight findByIdWithDetails(Session session, Long id) {

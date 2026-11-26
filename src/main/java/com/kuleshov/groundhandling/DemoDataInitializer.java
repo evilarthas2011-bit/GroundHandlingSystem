@@ -22,21 +22,21 @@ public final class DemoDataInitializer {
     private DemoDataInitializer() {
     }
 
-    /** Шаблон рейса: номер, тип борта, бортовой номер, смещение от текущего времени, статус, вес пассажиров. */
     private record FlightSpec(String number, AircraftType type, String tail,
                               int minutesOffset, FlightStatus status, double paxWeight) {
     }
 
+
     private static final FlightSpec[] FLIGHT_SPECS = {
-            new FlightSpec("SU-1101", AircraftType.BOEING_737, "RA-73101", -90,  FlightStatus.ARRIVED,   12_400),
-            new FlightSpec("SU-1102", AircraftType.AIRBUS_A320, "RA-74001", -30,  FlightStatus.LOADING,   9_800),
-            new FlightSpec("SU-1103", AircraftType.BOEING_737, "RA-73102", -15,  FlightStatus.LOADING,   11_200),
-            new FlightSpec("SU-1104", AircraftType.AIRBUS_A320, "RA-74002",  30,  FlightStatus.BOARDING,  10_500),
+            new FlightSpec("SU-1101", AircraftType.BOEING_737, "RA-73101", -90,  FlightStatus.ARRIVED,   5_400),
+            new FlightSpec("SU-1102", AircraftType.AIRBUS_A320, "RA-74001", -30,  FlightStatus.LOADING,   5_000),
+            new FlightSpec("SU-1103", AircraftType.BOEING_737, "RA-73102", -15,  FlightStatus.LOADING,   5_200),
+            new FlightSpec("SU-1104", AircraftType.AIRBUS_A320, "RA-74002",  30,  FlightStatus.BOARDING,  4_800),
             new FlightSpec("SU-1105", AircraftType.BOEING_737, "RA-73103",  60,  FlightStatus.SCHEDULED, 0),
             new FlightSpec("SU-1106", AircraftType.AIRBUS_A320, "RA-74003", 120,  FlightStatus.SCHEDULED, 0),
-            new FlightSpec("SU-1107", AircraftType.BOEING_737, "RA-73104", -40,  FlightStatus.DELAYED,   7_600),
-            new FlightSpec("SU-1108", AircraftType.AIRBUS_A320, "RA-74004", 180,  FlightStatus.READY,     10_900),
-            new FlightSpec("SU-1109", AircraftType.BOEING_737, "RA-73105", -180, FlightStatus.DEPARTED,  13_100),
+            new FlightSpec("SU-1107", AircraftType.BOEING_737, "RA-73104", -40,  FlightStatus.DELAYED,   3_800),
+            new FlightSpec("SU-1108", AircraftType.AIRBUS_A320, "RA-74004", 180,  FlightStatus.READY,     4_600),
+            new FlightSpec("SU-1109", AircraftType.BOEING_737, "RA-73105", -180, FlightStatus.DEPARTED,  5_900),
             new FlightSpec("SU-1110", AircraftType.AIRBUS_A320, "RA-74005", 240,  FlightStatus.SCHEDULED, 0)
     };
 
@@ -93,7 +93,7 @@ public final class DemoDataInitializer {
         Equipment c1 = equipment("Грузовая тележка №1", "TCV-40", 2.5);
         Equipment c2 = equipment("Багажная тележка №1", "AVT-20", 1.5);
 
-        // Часть техники занята на рейсах в статусе LOADING — табло покажет и свободные, и занятые
+
         t1.setAssignedFlight(flights.get(1));
         l1.setAssignedFlight(flights.get(1));
         l2.setAssignedFlight(flights.get(2));

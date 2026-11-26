@@ -11,8 +11,6 @@ import java.util.List;
 
 public class ResourceRepositoryImpl implements ResourceRepository {
 
-    // ================= Ядро =================
-
     @Override
     public List<Resource> findAll(Session session) {
         return session.createQuery(
@@ -58,8 +56,6 @@ public class ResourceRepositoryImpl implements ResourceRepository {
         Resource managed = session.contains(resource) ? resource : session.merge(resource);
         session.remove(managed);
     }
-
-    // ================= Переходные обёртки =================
 
     @Override
     public List<Resource> findAll() {

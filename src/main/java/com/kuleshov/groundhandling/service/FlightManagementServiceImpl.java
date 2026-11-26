@@ -47,29 +47,36 @@ public class FlightManagementServiceImpl implements FlightManagementService {
                     "Статус рейса " + flight.getFlightNumber() + " изменён на " + newStatus);
         });
     }
-
     @Override
-    public OperationResult updatePassengerWeight(Long flightId, double passengerWeight) {
+    public OperationResult updatePassengerWeight(Long flightId, double weight) {
         return HibernateUtil.inTransaction(session -> {
-            Flight flight = flightRepository.findByIdWithDetails(session, flightId);
+            Flight flight = session.get(Flight.class, flightId);
             if (flight == null) {
                 return OperationResult.error("Рейс не найден");
             }
-            if (flight.getStatus() == FlightStatus.DEPARTED) {
-                return OperationResult.error("Рейс уже вылетел — изменение веса недоступно");
+            if (flight.isClosedForOperations()) {
+                return OperationResult.error("Рейс закрыт для операций");
             }
-            double cargo = flight.getTotalCargoWeight();
-            double maxPayload = flight.getAircraft() != null ? flight.getAircraft().getMaxPayload() : 0.0;
-            if (cargo + passengerWeight > maxPayload) {
+            if (weight < 0) {
+                return OperationResult.error("Вес пассажиров не может быть отрицательным");
+            }
+            double cargoWeight = flight.getTotalCargoWeight();
+            double maxPayload = flight.getAircraft().getMaxPayload();
+            double remaining = maxPayload - cargoWeight;
+
+            if (weight > remaining) {
                 return OperationResult.error(String.format(
-                        "Общий вес (груз %.0f кг + пассажиры %.0f кг) превышает грузоподъёмность ВС (%.0f кг)",
-                        cargo, passengerWeight, maxPayload));
+                        "Вес пассажиров не может превышать остаток грузоподъёмности: " +
+                                "занято %.0f кг грузом, доступно %.0f кг из %.0f кг",
+                        cargoWeight, remaining, maxPayload));
             }
-            flight.setPassengerWeight(passengerWeight);
-            flightRepository.save(session, flight);
-            return OperationResult.success("Установлен вес пассажиров: " + (int) passengerWeight + " кг");
+            flight.setPassengerWeight(weight);
+            return OperationResult.success(String.format(
+                    "Установлен вес пассажиров: %.0f кг (свободно %.0f кг)", weight, remaining - weight));
         });
     }
+
+
 
     @Override
     public OperationResult addCargoToFlight(Long flightId, Long compartmentId, double weight, String description) {
@@ -192,7 +199,7 @@ public class FlightManagementServiceImpl implements FlightManagementService {
         }
         String number = flightNumber.trim().toUpperCase();
 
-        String tail = tailNumber == null ? "" : tailNumber.trim();
+        String tail = tailNumber == null ? "" : tailNumber.strip().toUpperCase();
         if (tail.isBlank()) {
             return OperationResult.error("Введите бортовой номер");
         }

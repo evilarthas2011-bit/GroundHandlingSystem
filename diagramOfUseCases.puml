@@ -16,7 +16,7 @@ rectangle "Ground Handling System" {
   usecase "Удаление рейса" as UC_Delete
   usecase "Управление ресурсами\n(техника, бригады)" as UC_Resources
   usecase "Экспорт отчёта в CSV" as UC_Export
-
+usecase "Управление парком ВС:\nпросмотр и регистрация бортов" as UC10
   usecase "Контроль грузоподъёмности" as UC_Weight
   usecase "Проверка допустимости\nперехода статуса" as UC_Transition
 }
@@ -32,7 +32,9 @@ Dispatcher --> UC_Auto
 Dispatcher --> UC_Delete
 Dispatcher --> UC_Resources
 Dispatcher --> UC_Export
+Dispatcher --> UC10
 
+UC_Create ..> UC10 : <<include>>\nвыбор борта из парка
 UC_Cargo ..> UC_Weight : <<include>>
 UC_Pax ..> UC_Weight : <<include>>
 UC_Status ..> UC_Transition : <<include>>

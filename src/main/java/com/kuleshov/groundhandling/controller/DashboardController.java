@@ -45,6 +45,7 @@ public class DashboardController implements Initializable {
     @FXML private VBox flightsView;
     @FXML private Button btnFlights;
     @FXML private Button btnResources;
+    @FXML private Button btnFleet;
 
     @FXML private TableView<Flight> flightsTable;
     @FXML private TableColumn<Flight, String> flightNumberColumn;
@@ -85,11 +86,10 @@ public class DashboardController implements Initializable {
     private ResourceAllocationService allocationService;
     private FlightManagementService flightManagementService;
 
-    /** Кеш для колонок таблицы: заполняется одним запросом при loadFlights(). */
     private final Map<Long, Equipment> equipmentByFlightId = new HashMap<>();
     private final Map<Long, Brigade> brigadeByFlightId = new HashMap<>();
 
-    /** Флаг: setValue на статусе вызывается программно, а не пользователем. */
+
     private boolean updatingStatus = false;
 
     private Flight selectedFlight;
@@ -111,9 +111,27 @@ public class DashboardController implements Initializable {
 
         btnFlights.setOnAction(e -> switchToFlights());
         btnResources.setOnAction(e -> switchToResources());
+        btnFleet.setOnAction(e -> showFleetView());
 
         startAutoRefresh();
         log("Система инициализирована. Автообновление каждые " + AUTO_REFRESH_INTERVAL_SECONDS + " сек.");
+    }
+
+    private void showFleetView() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/fleet-view.fxml"));
+            Parent root = loader.load();
+            FleetViewController controller = loader.getController();
+            controller.setOnFleetChanged(this::loadFlights);
+            Stage stage = new Stage();
+            stage.setTitle("Парк воздушных судов");
+            stage.setScene(new Scene(root));
+            stage.initOwner(MainApp.getPrimaryStage());
+            stage.show();
+        } catch (Exception e) {
+            log("Ошибка открытия парка ВС: " + e.getMessage());
+            showError("Ошибка", "Не удалось загрузить окно парка воздушных судов.");
+        }
     }
 
     private void startAutoRefresh() {
@@ -327,18 +345,22 @@ public class DashboardController implements Initializable {
         detailAircraftType.setText(selectedFlight.getAircraft() != null
                 ? selectedFlight.getAircraft().getAircraftType().getDisplayName() : "—");
 
-        // Программная установка: флаг гасит событие обработчика
         updatingStatus = true;
         statusComboBox.setValue(selectedFlight.getStatus());
         updatingStatus = false;
 
         double maxPayload = selectedFlight.getAircraft() != null
                 ? selectedFlight.getAircraft().getMaxPayload() : 0.0;
-        detailTotalWeight.setText(String.format("Груз: %.0f кг | Пасс.: %.0f кг\nВсего: %.0f / %.0f кг",
-                selectedFlight.getTotalCargoWeight(),
-                selectedFlight.getPassengerWeight(),
-                selectedFlight.getTotalWeight(),
-                maxPayload));
+        double cargoW = selectedFlight.getTotalCargoWeight();
+        Double paxObj = selectedFlight.getPassengerWeight();
+        double paxW = paxObj != null ? paxObj : 0.0;
+        double remaining = maxPayload - cargoW - paxW;
+
+        detailTotalWeight.setText(String.format(
+                "Груз: %.0f кг | Пасс.: %.0f кг | Всего: %.0f / %.0f кг | Остаток: %.0f кг",
+                cargoW, paxW, cargoW + paxW, maxPayload, remaining));
+        detailTotalWeight.setStyle("-fx-text-fill: "
+                + (remaining < 0 ? "#c62828" : remaining < 500 ? "#f39c12" : "#2e7d32") + ";");
 
         compartmentsContainer.getChildren().clear();
         compartmentComboBox.getItems().clear();
@@ -357,7 +379,6 @@ public class DashboardController implements Initializable {
         brigadeComboBox.setItems(FXCollections.observableArrayList(
                 allResources.stream().filter(r -> r instanceof Brigade).map(r -> (Brigade) r).toList()));
 
-        // Выбор по equals(id) — сущности из разных сессий, но сравнение работает корректно
         for (Resource r : flightManagementService.getAssignedResources(selectedFlight)) {
             if (r instanceof Equipment e) {
                 equipmentComboBox.getSelectionModel().select(e);
@@ -642,7 +663,7 @@ public class DashboardController implements Initializable {
             showFlightDetails(selectedFlight);
             loadFlights();
         } else {
-            showWarning("Превышение лимита!", result.getMessage());
+            showWarning("Операция не выполнена", result.getMessage());
             log("Ошибка: " + result.getMessage());
         }
     }
