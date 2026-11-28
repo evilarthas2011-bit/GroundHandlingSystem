@@ -9,7 +9,7 @@ import org.hibernate.Session;
 import java.util.List;
 
 public interface ResourceRepository {
-    // Ядро
+
     List<Resource> findAll(Session session);
     Resource findById(Session session, Long id);
     List<Resource> findByAssignedFlight(Session session, Flight flight);
@@ -18,7 +18,6 @@ public interface ResourceRepository {
     void save(Session session, Resource resource);
     void delete(Session session, Resource resource);
 
-    // Переходные обёртки
     List<Resource> findAll();
     Resource findById(Long id);
     List<Resource> findByAssignedFlight(Flight flight);

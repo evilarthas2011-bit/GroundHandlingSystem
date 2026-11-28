@@ -8,8 +8,6 @@ import java.util.List;
 
 public class AircraftRepositoryImpl implements AircraftRepository {
 
-
-
     @Override
     public List<Aircraft> findAll(Session session) {
         return session.createQuery(

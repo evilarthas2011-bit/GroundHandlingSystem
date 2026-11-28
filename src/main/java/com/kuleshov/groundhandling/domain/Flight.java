@@ -24,11 +24,9 @@ public class Flight {
     @Column(name = "departure_time", nullable = false)
     private LocalDateTime departureDateTime;
 
-    /** В БД колонка допускает NULL — храним в домене как Double, по умолчанию 0.0. */
     @Column(name = "passenger_weight")
     private Double passengerWeight = 0.0;
 
-    /** В БД aircraft_id допускает NULL, но по логике домена рейс без борта не существует. */
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "aircraft_id")
     private Aircraft aircraft;

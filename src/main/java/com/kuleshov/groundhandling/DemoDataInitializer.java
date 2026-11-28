@@ -12,11 +12,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Заполняет базу демонстрационными данными при первом запуске:
- * 10 рейсов, 10 единиц техники, 10 бригад.
- * Если в базе уже есть рейсы — ничего не делает, чтобы данные не дублировались.
- */
 public final class DemoDataInitializer {
 
     private DemoDataInitializer() {
@@ -123,7 +118,6 @@ public final class DemoDataInitializer {
         Brigade b9 = brigade("Бригада №9", "Багажная", 3);
         Brigade b10 = brigade("Бригада №10", "Грузовая", 4);
 
-        // Бригады на рейсы в статусе LOADING
         b1.setAssignedFlight(flights.get(1));
         b2.setAssignedFlight(flights.get(2));
         b4.setAssignedFlight(flights.get(1));

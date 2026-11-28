@@ -1,0 +1,75 @@
+@startuml
+!pragma layout smetana
+skinparam dpi 150
+skinparam componentStyle rectangle
+
+package "controller — слой представления (JavaFX)" {
+  [MainApp]
+  [DashboardController]
+  [FlightFormController]
+  [FleetViewController]
+  [FXML + CSS, Timeline 5 с]
+}
+
+package "service — слой бизнес-логики" {
+  [FlightManagementService (Impl)]
+  [ResourceManagementService (Impl)]
+  [ResourceAllocationService]
+  [FleetManagementService]
+  [WeightBalanceService]
+  [OperationResult]
+}
+
+package "repository — слой доступа к данным" {
+  interface FlightRepository
+  interface AircraftRepository
+  interface ResourceRepository
+  [FlightRepositoryImpl]
+  [AircraftRepositoryImpl]
+  [ResourceRepositoryImpl]
+}
+
+
+
+package "util" {
+  [HibernateUtil]
+  [CSVExporter]
+  [DemoDataInitializer]
+}
+
+database "PostgreSQL 16 (Docker)" as PG {
+  [flights]
+  [aircrafts]
+  [compartments]
+  [cargos]
+  [resources\nSINGLE_TABLE]
+}
+
+database "H2 (in-memory, тесты)" as H2
+
+[DashboardController] --> [FlightManagementService (Impl)] : OperationResult
+[FlightFormController] --> [FlightManagementService (Impl)]
+[FleetViewController] --> [FleetManagementService]
+[DashboardController] --> [ResourceManagementService (Impl)]
+[DashboardController] --> [ResourceAllocationService]
+
+[FlightManagementService (Impl)] ..> FlightRepository
+[ResourceManagementService (Impl)] ..> ResourceRepository
+[ResourceAllocationService] ..> ResourceRepository
+[FleetManagementService] ..> AircraftRepository
+[FlightManagementService (Impl)] ..> WeightBalanceService
+
+FlightRepository <|.. FlightRepositoryImpl
+AircraftRepository <|.. AircraftRepositoryImpl
+ResourceRepository <|.. ResourceRepositoryImpl
+
+FlightRepositoryImpl ..> [HibernateUtil] : SessionFactory
+Resource <|-- Equipment
+Resource <|-- Brigade
+
+[HibernateUtil] --> PG : JDBC, транзакции
+Flight ..> PG : аннотации JPA,\nhbm2ddl.auto = update
+[HibernateUtil] ..> H2 : hibernate-test.cfg.xml
+[CSVExporter] ..> [DashboardController]
+[DemoDataInitializer] ..> [HibernateUtil]
+@enduml

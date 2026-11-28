@@ -22,7 +22,7 @@ public class Compartment {
     @JoinColumn(name = "aircraft_id", nullable = false)
     private Aircraft aircraft;
 
-    /** Обратная сторона связи. Заполняется репозиторием при загрузке и доменными методами. */
+
     @OneToMany(mappedBy = "compartment", fetch = FetchType.LAZY)
     private List<Cargo> cargoList = new ArrayList<>();
 

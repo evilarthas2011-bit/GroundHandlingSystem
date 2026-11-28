@@ -181,7 +181,6 @@ class FlightManagementServiceTest extends IntegrationTestBase {
         Long compartmentId = HibernateUtil.inTransaction(session ->
                 session.get(Flight.class, flightId).getAircraft().getCompartments().get(0).getId());
 
-        // грузим 1000 кг: остаток payload = 6200 - 1000 = 5200
         OperationResult cargoResult = service.addCargoToFlight(
                 flightId, compartmentId, 1000.0, "Груз для проверки пассажиров");
         assertTrue(cargoResult.isSuccess(), "груз 1000 кг должен приниматься: " + cargoResult.getMessage());

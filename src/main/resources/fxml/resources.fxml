@@ -16,7 +16,6 @@
             <VBox spacing="15">
                 <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
 
-                <!-- Таблица техники -->
                 <TableView fx:id="equipmentTable" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="equipmentIdColumn" text="ID" prefWidth="60"/>
@@ -27,7 +26,6 @@
                     </columns>
                 </TableView>
 
-                <!-- Добавление новой техники -->
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Label text="Модель техники:"/>
                     <TextField fx:id="newEquipmentModelField" promptText="Например: Тягач T-100" prefWidth="250.0"/>
@@ -41,7 +39,6 @@
             <VBox spacing="15">
                 <padding><Insets top="15" right="15" bottom="15" left="15"/></padding>
 
-                <!-- Таблица бригад -->
                 <TableView fx:id="brigadeTable" VBox.vgrow="ALWAYS">
                     <columns>
                         <TableColumn fx:id="brigadeIdColumn" text="ID" prefWidth="60"/>
@@ -53,7 +50,6 @@
                     </columns>
                 </TableView>
 
-                <!-- Добавление новой бригады -->
                 <HBox spacing="10" alignment="CENTER_LEFT">
                     <Label text="Специализация:"/>
                     <TextField fx:id="newBrigadeSpecializationField" promptText="Например: Погрузочная" prefWidth="200.0"/>
@@ -66,7 +62,7 @@
         </Tab>
     </TabPane>
 
-    <!-- Журнал событий -->
+
     <VBox spacing="5">
         <Label text="📋 Журнал событий" styleClass="section-title"/>
         <TextArea fx:id="logArea" editable="false" prefHeight="100.0"

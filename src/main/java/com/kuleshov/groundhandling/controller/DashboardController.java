@@ -276,8 +276,6 @@ public class DashboardController implements Initializable {
             return new SimpleStringProperty(String.format("%.0f / %.0f кг", f.getTotalWeight(), max));
         });
 
-        // Колонки читают из кеша, собранного одним запросом в loadFlights() —
-        // вместо запроса к БД на каждую ячейку
         equipmentColumn.setCellValueFactory(data -> {
             Equipment e = equipmentByFlightId.get(data.getValue().getId());
             return new SimpleStringProperty(e != null ? e.getModelName() : "—");
@@ -305,7 +303,6 @@ public class DashboardController implements Initializable {
         try {
             List<Flight> flights = flightRepository.findAll();
 
-            // Один запрос за всеми ресурсами вместо запроса на каждую ячейку таблицы
             equipmentByFlightId.clear();
             brigadeByFlightId.clear();
             for (Resource r : resourceRepository.findAll()) {
@@ -479,7 +476,7 @@ public class DashboardController implements Initializable {
                 selectedFlight.getId(),
                 compartmentComboBox.getValue().getId(),
                 weight,
-                null // описание груза; при желании добавьте поле в форму
+                "Груз"
         );
 
         if (result.isSuccess()) {
@@ -527,7 +524,7 @@ public class DashboardController implements Initializable {
 
         if (result.isSuccess()) {
             log(result.getMessage());
-            showFlightDetails(selectedFlight); // перечитываем: занятость ресурсов обновилась
+            showFlightDetails(selectedFlight);
             loadFlights();
         } else {
             showError("Ошибка сохранения", result.getMessage());
@@ -654,7 +651,6 @@ public class DashboardController implements Initializable {
             return;
         }
 
-        // Доменная проверка лимита и сохранение — в сервисе, не здесь
         OperationResult result = flightManagementService.updatePassengerWeight(
                 selectedFlight.getId(), weight);
 

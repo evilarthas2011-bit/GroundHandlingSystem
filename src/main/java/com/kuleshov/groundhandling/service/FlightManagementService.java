@@ -15,7 +15,7 @@ public interface FlightManagementService {
     OperationResult unloadLastCargoFromFlight(Long flightId, Long compartmentId);
     OperationResult assignResources(Long flightId, Long equipmentId, Long brigadeId);
     OperationResult deleteFlight(Long flightId);
-    List<Resource> getAssignedResources(Flight flight); // переходное, до этапа 4
+    List<Resource> getAssignedResources(Flight flight);
     OperationResult createFlight(String flightNumber, LocalDateTime departureDateTime,
                                  AircraftType aircraftType, String tailNumber);
 

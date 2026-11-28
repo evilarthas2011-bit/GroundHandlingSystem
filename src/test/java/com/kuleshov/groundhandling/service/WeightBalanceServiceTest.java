@@ -44,7 +44,7 @@ class WeightBalanceServiceTest extends IntegrationTestBase {
     private boolean attemptLoad(Long compartmentId, double weight, String description) {
         return HibernateUtil.inTransaction(session -> {
             Flight flight = session.get(Flight.class, flightId);
-            flight.getCargoList().size();                       // инициализируем ленивые коллекции
+            flight.getCargoList().size();
             flight.getAircraft().getCompartments().size();
             Compartment compartment = session.get(Compartment.class, compartmentId);
 

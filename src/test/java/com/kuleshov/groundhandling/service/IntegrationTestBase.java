@@ -19,6 +19,7 @@ public abstract class IntegrationTestBase {
             session.createQuery("DELETE FROM Cargo").executeUpdate();
             session.createQuery("DELETE FROM Resource").executeUpdate();
             session.createQuery("DELETE FROM Flight").executeUpdate();
+            session.createQuery("DELETE FROM Compartment").executeUpdate();
             session.createQuery("DELETE FROM Aircraft").executeUpdate();
             return null;
         });

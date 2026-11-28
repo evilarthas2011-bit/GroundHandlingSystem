@@ -22,12 +22,10 @@ public class WeightBalanceService {
         return true;
     }
 
-    /** Удаляет последний добавленный груз данного отсека. */
     public boolean unloadLastCargo(Flight flight, Compartment compartment) {
-        // cargoList упорядочен по addedAt, id — см. findByIdWithDetails
         return flight.getCargoList().stream()
                 .filter(c -> compartment.equals(c.getCompartment()))
-                .reduce((first, second) -> second) // последний элемент
+                .reduce((first, second) -> second)
                 .map(last -> {
                     flight.removeCargo(last);
                     return true;

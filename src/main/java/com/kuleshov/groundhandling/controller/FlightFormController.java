@@ -38,7 +38,6 @@ public class FlightFormController {
     private FlightManagementService flightManagementService;
     private AircraftRepository aircraftRepository;
 
-    /** Колбэк: дашборд подписывается на событие «рейс создан», чтобы обновить таблицу. */
     private Runnable onFlightCreated;
 
     public void setOnFlightCreated(Runnable onFlightCreated) {
@@ -67,7 +66,6 @@ public class FlightFormController {
 
         loadFleet();
 
-        // при смене типа ВС список бортов фильтруется под выбранный тип
         aircraftTypeComboBox.valueProperty().addListener((obs, oldType, newType) -> loadFleet());
     }
 

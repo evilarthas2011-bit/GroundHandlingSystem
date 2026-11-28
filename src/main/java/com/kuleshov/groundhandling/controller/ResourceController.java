@@ -189,7 +189,7 @@ public class ResourceController implements Initializable {
 
         try {
             Equipment equipment = new Equipment();
-            equipment.setName(model); // <-- ДОБАВЛЕНО: заполняем обязательное поле name
+            equipment.setName(model);
             equipment.setModelName(model);
             equipment.setCapacity(0.0);
 
@@ -249,7 +249,7 @@ public class ResourceController implements Initializable {
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 try {
-                    resourceRepository.release(equipment.getId()); // <-- вместо setAssignedFlight(null) + save
+                    resourceRepository.release(equipment.getId());
                     log("Освобождена техника: " + equipment.getModelName());
                     loadResources();
                 } catch (Exception e) {

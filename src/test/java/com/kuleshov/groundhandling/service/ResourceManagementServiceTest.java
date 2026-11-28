@@ -35,8 +35,8 @@ class ResourceManagementServiceTest extends IntegrationTestBase {
     private Long createBrigade(String name, int size) {
         return HibernateUtil.inTransaction(session -> {
             Brigade brigade = new Brigade();
-            brigade.setName(name);             // <-- подгоните
-            brigade.setSize(size);             // <-- подгоните
+            brigade.setName(name);
+            brigade.setSize(size);
             session.persist(brigade);
             return brigade.getId();
         });
@@ -62,7 +62,7 @@ class ResourceManagementServiceTest extends IntegrationTestBase {
     @Test
     @DisplayName("addEquipment: корректная техника сохранена в базе")
     void addEquipment_valid_success() {
-        OperationResult result = service.addEquipment("Тягач T-100"); // <-- подгоните сигнатуру
+        OperationResult result = service.addEquipment("Тягач T-100");
         assertTrue(result.isSuccess(), result.getMessage());
 
         Equipment equipment = HibernateUtil.inTransaction(session ->
@@ -87,11 +87,10 @@ class ResourceManagementServiceTest extends IntegrationTestBase {
     @Test
     @DisplayName("addBrigade: нулевой и отрицательный размер — ошибка")
     void addBrigade_invalidSize_error() {
-        assertFalse(service.addBrigade("Погрузочная", 0).isSuccess());   // <-- подгоните сигнатуру
+        assertFalse(service.addBrigade("Погрузочная", 0).isSuccess());
         assertFalse(service.addBrigade("Погрузочная", -3).isSuccess());
     }
 
-    // ---------- freeResource ----------
 
     @Test
     @DisplayName("freeResource: занятый ресурс освобождён, ссылка на рейс снята")
@@ -99,7 +98,6 @@ class ResourceManagementServiceTest extends IntegrationTestBase {
         Flight departed = createDepartedFlight("SU-7777");
         Long resourceId = createEquipment("Тягач T-500");
 
-        // Назначаем ресурс на рейс напрямую через базу
         HibernateUtil.inTransaction(session -> {
             Equipment equipment = session.get(Equipment.class, resourceId);
             equipment.setAssignedFlight(departed);
@@ -107,7 +105,7 @@ class ResourceManagementServiceTest extends IntegrationTestBase {
             return null;
         });
 
-        OperationResult result = service.freeResource(resourceId); // <-- подгоните сигнатуру
+        OperationResult result = service.freeResource(resourceId);
         assertTrue(result.isSuccess(), "занятый ресурс должен освобождаться: " + result.getMessage());
 
         Equipment released = HibernateUtil.inTransaction(session -> session.get(Equipment.class, resourceId));
@@ -125,7 +123,7 @@ class ResourceManagementServiceTest extends IntegrationTestBase {
     void deleteResource_free_success() {
         Long id = createBrigade("Уборочная", 4);
 
-        OperationResult result = service.deleteResource(id); // <-- подгоните сигнатуру
+        OperationResult result = service.deleteResource(id);
         assertTrue(result.isSuccess(), result.getMessage());
 
         Brigade deleted = HibernateUtil.inTransaction(session -> session.get(Brigade.class, id));

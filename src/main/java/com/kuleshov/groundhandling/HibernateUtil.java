@@ -10,11 +10,13 @@ import java.util.function.Function;
 
 public class HibernateUtil {
     private static final SessionFactory sessionFactory;
+    private static final String CFG_FILE =
+            System.getProperty("hibernate.cfg", "hibernate.cfg.xml");
 
     static {
         try {
             Configuration configuration = new Configuration();
-            configuration.configure("hibernate.cfg.xml");
+            configuration.configure(CFG_FILE);
             configuration.addAnnotatedClass(Flight.class);
             configuration.addAnnotatedClass(Aircraft.class);
             configuration.addAnnotatedClass(Compartment.class);
@@ -50,7 +52,5 @@ public class HibernateUtil {
             }
         }
     }
-    private static final String CFG_FILE =
-            System.getProperty("hibernate.cfg", "hibernate.cfg.xml");
 
 }

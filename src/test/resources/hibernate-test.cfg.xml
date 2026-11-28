@@ -12,7 +12,7 @@
         <property name="hbm2ddl.auto">create-drop</property>
         <property name="show_sql">false</property>
 
-        <!-- Перечислите ВСЕ ваши entity-классы -->
+
         <mapping class="com.kuleshov.groundhandling.domain.AircraftType"/>
         <mapping class="com.kuleshov.groundhandling.domain.Aircraft"/>
         <mapping class="com.kuleshov.groundhandling.domain.Compartment"/>

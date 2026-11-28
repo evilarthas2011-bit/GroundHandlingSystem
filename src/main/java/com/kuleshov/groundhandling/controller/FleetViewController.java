@@ -30,7 +30,6 @@ public class FleetViewController {
     private final FleetManagementService fleetService =
             new FleetManagementServiceImpl(new AircraftRepositoryImpl());
 
-    /** Колбэк: дашборд обновляет данные, когда парк изменился. */
     private Runnable onFleetChanged;
 
     public void setOnFleetChanged(Runnable onFleetChanged) {

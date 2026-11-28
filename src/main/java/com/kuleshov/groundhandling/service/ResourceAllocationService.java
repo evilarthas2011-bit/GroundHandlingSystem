@@ -18,7 +18,6 @@ public class ResourceAllocationService {
 
     public OperationResult allocateResources(Long flightId) {
         return HibernateUtil.inTransaction(session -> {
-            // откат по id: детали не нужны, нужен только статус
             Flight flight = session.find(Flight.class, flightId);
             if (flight == null) {
                 return OperationResult.error("Рейс не найден");
@@ -44,7 +43,6 @@ public class ResourceAllocationService {
         });
     }
 
-    /** Переходная перегрузка для старого вызова из контроллера. */
     public OperationResult allocateResources(Flight flight) {
         return allocateResources(flight.getId());
     }

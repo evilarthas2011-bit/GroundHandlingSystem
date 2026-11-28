@@ -1,23 +1,62 @@
 @startuml
-!pragma layout smetana
-skinparam dpi 150
+skinparam dpi 300
+skinparam shadowing false
 skinparam classAttributeIconSize 0
-skinparam nodesep 50
-skinparam ranksep 45
-skinparam package {
-  BackgroundColor #F8F9FA
-  BorderColor #9AA5B1
-}
-skinparam class {
-  BackgroundColor #FFFFFF
-  BorderColor #53627C
-  ArrowColor #53627C
-}
-hide circle
-hide empty methods
+skinparam linetype ortho
+skinparam packageStyle rectangle
+left to right direction
 
-' ================= ДОМЕН (нижний слой, ни от кого не зависит) =================
-package "domain" as Domain {
+package "com.kuleshov.groundhandling.domain" {
+
+  class Flight <<Entity>> {
+    - id : Long
+    - flightNumber : String
+    - departureDateTime : LocalDateTime
+    - passengerWeight : Double
+    - status : FlightStatus
+    + getTotalCargoWeight() : double
+    + getTotalWeight() : double
+    + isClosedForOperations() : boolean
+    + addCargo(cargo : Cargo)
+    + removeCargo(cargo : Cargo)
+  }
+
+  class Aircraft <<Entity>> {
+    - id : Long
+    - tailNumber : String
+    + getMaxPayload() : double
+    + {static} createFor(type : AircraftType, tail : String) : Aircraft
+  }
+
+  class Compartment <<Entity>> {
+    - id : Long
+    - name : String
+    - maxWeight : double
+    - currentWeight : double
+    + getLoadRatio() : double
+  }
+
+  class Cargo <<Entity>> {
+    - id : Long
+    - description : String
+    - weight : double
+    - addedAt : LocalDateTime
+  }
+
+  abstract class Resource <<Entity>> {
+    - id : Long
+    - assignedFlight : Flight
+    + isFree() : boolean
+  }
+
+  class Equipment {
+    - modelName : String
+  }
+
+  class Brigade {
+    - specialization : String
+    - size : int
+  }
 
   enum FlightStatus {
     SCHEDULED
@@ -25,234 +64,198 @@ package "domain" as Domain {
     LOADING
     BOARDING
     READY
-    DELAYED
     DEPARTED
+    DELAYED
   }
 
   enum AircraftType {
-    BOEING_737
-    AIRBUS_A320
-    +getDisplayName() String
-    +getMaxPayload() double
+    - displayName : String
+    - compartments : List<CompartmentSpec>
+    + getDisplayName() : String
+    + getCompartments() : List<CompartmentSpec>
   }
 
-  class Aircraft {
-    -id : Long
-    -tailNumber : String
-    -aircraftType : AircraftType
-    -compartments : List~Compartment~
-    +getMaxPayload() double
-    +{static} createFor(type, tail) Aircraft
+  class CompartmentSpec {
+    - name : String
+    - maxWeight : double
   }
-
-  class Compartment {
-    -id : Long
-    -name : String
-    -maxWeight : double
-    -currentWeight : double
-    -aircraft : Aircraft
-  }
-
-  class Flight {
-    -id : Long
-    -flightNumber : String
-    -departureDateTime : LocalDateTime
-    -status : FlightStatus
-    -passengerWeight : Double
-    -cargoList : List~Cargo~
-    -aircraft : Aircraft
-    +getTotalCargoWeight() double
-    +getTotalWeight() double
-    +isClosedForOperations() boolean
-    +addCargo(cargo) void
-    +removeCargo(cargo) void
-  }
-
-  class Cargo {
-    -id : Long
-    -weight : double
-    -description : String
-    -addedAt : LocalDateTime
-    -flight : Flight
-    -compartment : Compartment
-  }
-
-  abstract class Resource {
-    -id : Long
-    -name : String
-    -assignedFlight : Flight
-    +isFree() boolean
-  }
-
-  class Equipment {
-  }
-
-  class Brigade {
-    -size : int
-  }
-
-  Resource <|-- Equipment
-  Resource <|-- Brigade
-  Flight "1" --> "1" FlightStatus
-  Flight "*" --o "1" Aircraft : назначен борт
-  Aircraft "1" *-- "2" Compartment : отсеки
-  Aircraft "1" --> "1" AircraftType
-  Flight "1" *-- "*" Cargo : грузы
-  Cargo "*" --> "1" Compartment : размещён в
-  Resource "*" --> "0..1" Flight : назначен на
 }
 
-' ================= РЕПОЗИТОРИИ =================
-package "repository" as Repo {
+package "com.kuleshov.groundhandling.repository" {
 
   interface FlightRepository {
-    +findAll() List~Flight~
-    +findById(id) Flight
-    +findByIdWithDetails(id) Flight
-    +findByFlightNumber(number) Flight
-    +save(flight) void
-    +delete(flight) void
+    + findAll() : List<Flight>
+    + findByIdWithDetails(session : Session, id : Long) : Flight
+    + save(session : Session, flight : Flight)
+    + delete(session : Session, id : Long)
   }
 
   interface AircraftRepository {
-    +findAll() List~Aircraft~
-    +findByTailNumber(number) Aircraft
-    +save(aircraft) void
+    + findByTailNumber(session : Session, tail : String) : Aircraft
+    + findAll() : List<Aircraft>
+    + save(session : Session, aircraft : Aircraft)
   }
 
   interface ResourceRepository {
-    +findAll() List~Resource~
-    +findByAssignedFlight(flight) List~Resource~
-    +findAvailableEquipment() List~Equipment~
-    +findAvailableBrigades() List~Brigade~
-    +save(resource) void
-    +delete(resource) void
-    +release(resourceId) void
+    + findAll() : List<Resource>
+    + findAvailableEquipment() : List<Equipment>
+    + findAvailableBrigades() : List<Brigade>
+    + save(resource : Resource)
   }
 
   class FlightRepositoryImpl
   class AircraftRepositoryImpl
   class ResourceRepositoryImpl
-
-  FlightRepositoryImpl ..|> FlightRepository
-  AircraftRepositoryImpl ..|> AircraftRepository
-  ResourceRepositoryImpl ..|> ResourceRepository
 }
 
-' ================= СЕРВИСЫ =================
-package "service" as Svc {
+package "com.kuleshov.groundhandling.service" {
 
   interface FlightManagementService {
-    +createFlight(number, dateTime, type, tail) OperationResult
-    +updateFlightStatus(id, status) OperationResult
-    +updatePassengerWeight(id, weight) OperationResult
-    +addCargoToFlight(id, compartmentId, weight, desc) OperationResult
-    +unloadLastCargoFromFlight(id, compartmentId) OperationResult
-    +assignResources(id, equipmentId, brigadeId) OperationResult
-    +deleteFlight(id) OperationResult
+    + createFlight(number : String, departure : LocalDateTime,
+        type : AircraftType, tail : String) : OperationResult
+    + addCargoToFlight(flightId : Long, compartmentId : Long,
+        weight : double, description : String) : OperationResult
+    + unloadLastCargoFromFlight(flightId : Long,
+        compartmentId : Long) : OperationResult
+    + updatePassengerWeight(flightId : Long, weight : double) : OperationResult
+    + updateFlightStatus(flightId : Long, status : FlightStatus) : OperationResult
+    + assignResources(flightId : Long, equipmentId : Long,
+        brigadeId : Long) : OperationResult
+    + deleteFlight(flightId : Long) : OperationResult
+    + getAssignedResources(flight : Flight) : List<Resource>
   }
 
   interface ResourceManagementService {
-    +addEquipment(name) OperationResult
-    +addBrigade(name, size) OperationResult
-    +freeResource(resourceId) OperationResult
-    +deleteResource(resourceId) OperationResult
+    + addEquipment(modelName : String) : OperationResult
+    + addBrigade(specialization : String, size : int) : OperationResult
+    + freeResource(resourceId : Long) : OperationResult
+    + deleteResource(resourceId : Long) : OperationResult
   }
 
-  class FleetManagementService {
-    +registerAircraft(type, tail) OperationResult
-    +getFleet() List~Aircraft~
-  }
-
-  class ResourceAllocationService {
-    +allocateResources(flightId) OperationResult
+  interface FleetManagementService {
+    + registerAircraft(type : AircraftType, tailNumber : String) : OperationResult
+    + getFleet() : List<Aircraft>
   }
 
   class FlightManagementServiceImpl {
-    -flightRepository : FlightRepository
-    -resourceRepository : ResourceRepository
-    -aircraftRepository : AircraftRepository
-    -weightBalanceService : WeightBalanceService
+    - weightBalanceService : WeightBalanceService
   }
   class ResourceManagementServiceImpl
+  class FleetManagementServiceImpl
 
   class WeightBalanceService {
-    +validateAndAddCargo(flight, cargo) boolean
-    +unloadLastCargo(flight, compartment) boolean
+    + validateAndAddCargo(flight : Flight, cargo : Cargo) : boolean
+    + unloadLastCargo(flight : Flight, compartment : Compartment) : boolean
   }
 
-  class OperationResult {
-    -success : boolean
-    -message : String
-    +{static} success(msg) OperationResult
-    +{static} error(msg) OperationResult
-    +isSuccess() boolean
-    +getMessage() String
+  class ResourceAllocationService {
+    + allocateResources(flightId : Long) : OperationResult
   }
 
-  FlightManagementServiceImpl ..|> FlightManagementService
-  ResourceManagementServiceImpl ..|> ResourceManagementService
-  FlightManagementServiceImpl o-- WeightBalanceService
+  class FlightStatusTransitionValidator {
+    + validate(current : FlightStatus, next : FlightStatus) : OperationResult
+  }
+
+  class OperationResult <<Value Object>> {
+    - success : boolean
+    - message : String
+    + isSuccess() : boolean
+    + getMessage() : String
+    + {static} success(message : String) : OperationResult
+    + {static} error(message : String) : OperationResult
+  }
 }
 
-' ================= КОНТРОЛЛЕРЫ =================
-package "controller" as Ctrl {
-
-  class MainApp {
-    -primaryStage : Stage
-    +{static} getPrimaryStage() Stage
-    +start(stage) void
-  }
+package "com.kuleshov.groundhandling.controller" {
 
   class DashboardController {
-    -selectedFlight : Flight
-    -equipmentByFlightId : Map~Long,Equipment~
-    -brigadeByFlightId : Map~Long,Brigade~
-    -updatingStatus : boolean
-    +loadFlights() void
-    +showFlightDetails(flight) void
-    +showFleetView() void
-    +switchToFlights() void
-    +switchToResources() void
+    - selectedFlight : Flight
+    - flightManagementService : FlightManagementService
+    - allocationService : ResourceAllocationService
+    - startAutoRefresh()
+    - loadFlights()
+    - showFlightDetails(flight : Flight)
+    - handleAddCargo()
+    - handleExportCsv()
   }
 
-  class FlightFormController {
-    -onFlightCreated : Runnable
-    +handleCreateFlight() void
-  }
-
-  class FleetViewController {
-    -onFleetChanged : Runnable
-    +handleAddAircraft() void
-  }
-
-  MainApp o-- DashboardController
+  class FlightFormController
+  class FleetViewController
+  class ResourcesController
 }
 
-' ================= УТИЛИТЫ =================
-package "util" as Util {
-  class HibernateUtil {
-    -{static} sessionFactory : SessionFactory
-    +{static} getSessionFactory() SessionFactory
-    +{static} inSession(fn) T
-    +{static} inTransaction(fn) T
+package "com.kuleshov.groundhandling" {
+
+  class MainApp
+  class HibernateUtil <<Singleton>> {
+    - {static} sessionFactory : SessionFactory
+    - {static} CFG_FILE : String
+    + {static} getSessionFactory() : SessionFactory
+    + {static} inSession(work : Function) : T
+    + {static} inTransaction(work : Function) : T
   }
+
   class CSVExporter {
-    +{static} exportFlights(flights, path) void
-  }
-  class DemoDataInitializer {
-    +{static} initialize() void
+    + {static} exportFlights(flights : List<Flight>, path : String)
   }
 }
 
-' ---------- зависимости слоёв (пакетные стрелки) ----------
-Ctrl ..> Svc : вызовы сервисов
-Svc ..> Repo : доступ к данным
-Svc ..> Domain : сущности
-Repo ..> Domain : ORM-маппинг
-Ctrl ..> Domain : модели таблиц и экспорт
-Repo ..> Util : HibernateUtil
-Svc ..> Util : транзакции
-Ctrl ..> Util : CSV, демо-данные
+' --- доменные связи ---
+Flight "1" *-- "0..*" Cargo : cargoList
+Flight "0..*" --> "1" Aircraft : aircraft
+Aircraft "1" *-- "0..*" Compartment : compartments
+Compartment "1" *-- "0..*" Cargo : cargoList
+Aircraft --> AircraftType : aircraftType
+AircraftType "1" o-- "2" CompartmentSpec
+Resource <|-- Equipment
+Resource <|-- Brigade
+Resource "0..*" --> "0..1" Flight : assignedFlight
 
+' --- репозитории ---
+FlightRepositoryImpl ..|> FlightRepository
+AircraftRepositoryImpl ..|> AircraftRepository
+ResourceRepositoryImpl ..|> ResourceRepository
+FlightRepositoryImpl ..> HibernateUtil
+AircraftRepositoryImpl ..> HibernateUtil
+ResourceRepositoryImpl ..> HibernateUtil
+
+' --- сервисы ---
+FlightManagementServiceImpl ..|> FlightManagementService
+ResourceManagementServiceImpl ..|> ResourceManagementService
+FleetManagementServiceImpl ..|> FleetManagementService
+FlightManagementServiceImpl --> FlightRepository
+FlightManagementServiceImpl --> AircraftRepository
+FlightManagementServiceImpl --> ResourceRepository
+FlightManagementServiceImpl --> WeightBalanceService
+FlightManagementServiceImpl --> FlightStatusTransitionValidator
+ResourceManagementServiceImpl --> ResourceRepository
+FleetManagementServiceImpl --> AircraftRepository
+ResourceAllocationService --> ResourceRepository
+
+' --- контроллер ---
+DashboardController --> FlightManagementService
+DashboardController --> ResourceAllocationService
+DashboardController ..> CSVExporter
+FlightFormController --> FlightManagementService
+FleetViewController --> FleetManagementService
+ResourcesController --> ResourceManagementService
+
+MainApp ..> HibernateUtil
+
+' --- использование сущностей domain ---
+FlightManagementServiceImpl --> Flight
+FlightManagementServiceImpl --> Cargo
+WeightBalanceService --> Flight
+WeightBalanceService --> Cargo
+WeightBalanceService --> Compartment
+ResourceAllocationService --> Resource
+ResourceRepositoryImpl --> Resource
+DashboardController --> Flight
+DashboardController --> OperationResult
+HibernateUtil --> Flight
+HibernateUtil --> Aircraft
+HibernateUtil --> Compartment
+HibernateUtil --> Cargo
+HibernateUtil --> Equipment
+HibernateUtil --> Brigade
 @enduml
